@@ -4,20 +4,22 @@
   "description": "Upgrade your typescript code to target version",
   "main": "index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "ts-node .\\src\\index.ts",
+    "prettier": "prettier --config .\\prettier.config.js .\\**\\*.ts --write"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HearTao/ts-upgrade.git"
   },
-  "author": "",
-  "license": "ISC",
+  "author": "kingwl",
+  "license": "MIT",
   "bugs": {
     "url": "https://github.com/HearTao/ts-upgrade/issues"
   },
   "homepage": "https://github.com/HearTao/ts-upgrade#readme",
   "dependencies": {
     "cross-env": "^7.0.2",
+    "prettier": "^2.0.5",
     "ts-node": "^8.9.0",
     "typescript": "^3.8.3"
   }
