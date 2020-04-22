@@ -26,7 +26,15 @@ import {
     Token,
     isVoidExpression,
     createPrinter,
-    EmitHint
+    EmitHint,
+    isPropertyAccessExpression,
+    isElementAccessExpression,
+    isCallExpression,
+    createPropertyAccessChain,
+    createToken,
+    isPrivateIdentifier,
+    createElementAccessChain,
+    createCallChain
 } from 'typescript';
 
 export enum TypeScriptVersion {
@@ -150,6 +158,8 @@ export function upgrade(code: string, target: TypeScriptVersion) {
                 return upgradeConditionalExpression(
                     node as ConditionalExpression
                 );
+            case SyntaxKind.BinaryExpression:
+                return upgradeBinaryExpression(node as BinaryExpression);
             default:
                 return forEachChild(node, visitor);
         }
@@ -174,6 +184,126 @@ export function upgrade(code: string, target: TypeScriptVersion) {
         return expr;
     }
 
+    function upgradeBinaryExpression(
+        expr: BinaryExpression
+    ): Expression | undefined {
+        // a && a.b && a.b["c"] && a.b["c"]()
+        // to
+        // a?.b?.["c"]?.()
+        const optionalChains = getOptionalChains(expr);
+        if (optionalChains) {
+            return createOptionalChains(optionalChains);
+        }
+        return expr;
+    }
+
+    function cast<T extends Node, U extends T>(
+        node: T,
+        cb: (v: T) => v is U
+    ): U {
+        if (!cb(node)) {
+            throw new Error('invalid cast: ' + SyntaxKind[node.kind]);
+        }
+        return node;
+    }
+
+    function createOptionalChains(
+        chains: ChainableExpression[]
+    ): ChainableExpression {
+        const fistChain = chains[0];
+        let lastChain = createOptionalChainByChainableExpression(
+            fistChain,
+            fistChain.expression
+        );
+        for (let i = 1; i < chains.length; ++i) {
+            const chain = chains[i];
+            lastChain = createOptionalChainByChainableExpression(
+                chain,
+                lastChain
+            );
+        }
+        return lastChain;
+    }
+
+    function createOptionalChainByChainableExpression(
+        expr: ChainableExpression,
+        left: Expression
+    ) {
+        switch (expr.kind) {
+            case SyntaxKind.PropertyAccessExpression:
+                return createPropertyAccessChain(
+                    left,
+                    createToken(SyntaxKind.QuestionDotToken),
+                    cast(expr.name, isIdentifier)
+                );
+            case SyntaxKind.ElementAccessExpression:
+                return createElementAccessChain(
+                    left,
+                    createToken(SyntaxKind.QuestionDotToken),
+                    expr.argumentExpression
+                );
+            case SyntaxKind.CallExpression:
+                const call = expr as CallExpression;
+                return createCallChain(
+                    left,
+                    createToken(SyntaxKind.QuestionDotToken),
+                    call.typeArguments,
+                    call.arguments
+                );
+        }
+    }
+
+    type ChainableExpression =
+        | PropertyAccessExpression
+        | ElementAccessExpression
+        | CallExpression;
+
+    function isChainableExpression(
+        expr: Expression
+    ): expr is ChainableExpression {
+        return (
+            isPropertyAccessExpression(expr) ||
+            isElementAccessExpression(expr) ||
+            isCallExpression(expr)
+        );
+    }
+
+    // a && a.b && a.b.c
+    function getOptionalChains(expr: BinaryExpression) {
+        const chains: ChainableExpression[] = [];
+        let expression: Expression = expr;
+        while (
+            isBinaryExpression(expression) &&
+            expression.operatorToken.kind === SyntaxKind.AmpersandAmpersandToken
+        ) {
+            if (!isChainableExpression(expression.right)) {
+                return undefined;
+            }
+
+            chains.unshift(expression.right);
+            expression = expression.left;
+        }
+
+        if (chains.length < 1) return undefined;
+
+        let prefix: ChainableExpression = chains[0];
+        for (let i = 1; i < chains.length; ++i) {
+            const chain = chains[i];
+            if (!isEqualityExpression(prefix, chain.expression)) {
+                return undefined;
+            }
+            if (
+                isPropertyAccessExpression(chain) &&
+                isPrivateIdentifier(chain.name)
+            ) {
+                return undefined;
+            }
+            prefix = chain;
+        }
+
+        return chains;
+    }
+
     function couldConvertIntoNullish(
         cond: ConditionalExpression,
         nullableConditionTarget: Expression
@@ -195,7 +325,9 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             return true;
         }
 
-        if (left.getText(sourceFile).trim() === right.getText(sourceFile).trim()) {
+        if (
+            left.getText(sourceFile).trim() === right.getText(sourceFile).trim()
+        ) {
             return true;
         }
         return false;
@@ -370,7 +502,9 @@ function main() {
         'a === undefined ? a : 1',
         'a === void 0 ? a : 1',
         'a === null || a === undefined ? a : 1',
-        'a() == null ? a() : 1'
+        'a() == null ? a() : 1',
+        'a && a.b && a.b.c',
+        "a && a.b && a.b['c'] && a.b['c']() && a.b['c']().d"
     ];
     const convertedCode = codeToConvert.map((code) =>
         upgrade(code, TypeScriptVersion.v3_7)
