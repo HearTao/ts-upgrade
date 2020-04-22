@@ -195,7 +195,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             return true;
         }
 
-        if (left.getText().trim() === right.getText().trim()) {
+        if (left.getText(sourceFile).trim() === right.getText(sourceFile).trim()) {
             return true;
         }
         return false;
@@ -369,7 +369,8 @@ function main() {
         'a === null ? a : 1',
         'a === undefined ? a : 1',
         'a === void 0 ? a : 1',
-        'a === null || a === undefined ? a : 1'
+        'a === null || a === undefined ? a : 1',
+        'a() == null ? a() : 1'
     ];
     const convertedCode = codeToConvert.map((code) =>
         upgrade(code, TypeScriptVersion.v3_7)
