@@ -48,6 +48,15 @@ jobs:
     if: "startsWith(github.ref, 'refs/tags/')"
     needs: test
     steps:
-    - run: yarn publish
+    - uses: actions/checkout@v2
+    - name: Use Node.js 12.x
+      uses: actions/setup-node@v1
+      with:
+        node-version: 12.x
+    - run: npm install -g yarn
+    - run: yarn
+    - run: yarn lint
+    - run: yarn build
+    - run: npm publish
       env:
         NODE_AUTH_TOKEN: ${{secrets.NPM_PUBLISH_TOKEN}}
