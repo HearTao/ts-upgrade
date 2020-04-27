@@ -2,10 +2,11 @@
   "name": "ts-upgrade",
   "version": "1.0.0",
   "description": "Upgrade your typescript code to target version",
-  "main": "index.js",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
-    "test": "ts-node .\\src\\index.ts",
-    "prettier": "prettier --config .\\prettier.config.js .\\**\\*.ts --write"
+    "test": "ts-node ./tests/index.ts --project ./tsconfig.test.json",
+    "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts --write"
   },
   "repository": {
     "type": "git",
