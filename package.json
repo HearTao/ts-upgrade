@@ -5,11 +5,11 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "lint": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts",
+    "lint": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts ./*.js",
     "build": "tsc --project ./tsconfig.json",
     "build:test": "tsc --project ./tsconfig.test.json",
     "test": "npm run build:test && node ./dist/tests/index.js",
-    "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts --write"
+    "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts ./*.js --write"
   },
   "files": [
     "src",
@@ -30,5 +30,8 @@
     "prettier": "^2.0.5",
     "ts-node": "^8.9.0",
     "typescript": "^3.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^13.13.4"
   }
 }
