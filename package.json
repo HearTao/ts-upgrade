@@ -6,6 +6,8 @@
   "types": "dist/index.d.ts",
   "scripts": {
     "test": "ts-node ./tests/index.ts --project ./tsconfig.test.json",
+    "lint": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts",
+    "build": "tsc",
     "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts --write"
   },
   "repository": {
