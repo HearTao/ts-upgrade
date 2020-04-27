@@ -7,8 +7,8 @@
   "scripts": {
     "lint": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts ./*.js",
     "build": "tsc --project ./tsconfig.json",
-    "build:test": "tsc --project ./tsconfig.test.json",
-    "test": "npm run build:test && node ./dist/tests/index.js",
+    "test": "jest",
+    "coverage": "jest --coverage",
     "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts ./*.js --write"
   },
   "files": [
@@ -32,6 +32,12 @@
     "typescript": "^3.8.3"
   },
   "devDependencies": {
-    "@types/node": "^13.13.4"
+    "@babel/core": "^7.9.0",
+    "@babel/preset-env": "^7.9.5",
+    "@babel/preset-typescript": "^7.9.0",
+    "@types/jest": "^25.2.1",
+    "@types/node": "^13.13.4",
+    "babel-jest": "^25.4.0",
+    "jest": "^25.4.0"
   }
 }
