@@ -1,6 +1,6 @@
 {
   "name": "ts-upgrade",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Upgrade your typescript code to target version",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
