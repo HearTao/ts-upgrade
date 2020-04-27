@@ -5,9 +5,10 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "test": "ts-node ./tests/index.ts --project ./tsconfig.test.json",
     "lint": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts",
-    "build": "tsc",
+    "build": "tsc --project ./tsconfig.json",
+    "build:test": "tsc --project ./tsconfig.test.json",
+    "test": "npm run build:test && node ./dist/tests/index.js",
     "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts --write"
   },
   "repository": {

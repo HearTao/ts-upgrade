@@ -2,8 +2,9 @@
     "compilerOptions": {
         "strict": true,
         "declaration": true,
+        "sourceMap": true,
         "target": "es6",
-        "module": "commonjs",
+        "module": "esnext",
         "moduleResolution": "node",
         "outDir": "dist",
         "rootDir": "src",
