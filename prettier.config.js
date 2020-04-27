@@ -1,6 +1,5 @@
 module.exports = {
-
-    parser: "typescript",
+    parser: 'typescript',
 
     semi: true,
 
@@ -14,7 +13,7 @@ module.exports = {
 
     useTabs: false,
 
-    trailingComma: "none",
+    trailingComma: 'none',
 
-    proseWrap: "always"
-}
+    proseWrap: 'always'
+};
