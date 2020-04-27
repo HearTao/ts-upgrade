@@ -1,41 +1,4 @@
-import {
-    createSourceFile,
-    ScriptTarget,
-    forEachChild,
-    Node,
-    SyntaxKind,
-    BinaryExpression,
-    PropertyAccessExpression,
-    PropertyAccessChain,
-    ElementAccessExpression,
-    CallExpression,
-    isNullishCoalesce,
-    FunctionDeclaration,
-    isTypePredicateNode,
-    Type,
-    createProgram,
-    visitNode,
-    isBinaryExpression,
-    ConditionalExpression,
-    Expression,
-    isIdentifier,
-    createNullishCoalesce,
-    skipPartiallyEmittedExpressions,
-    isParenthesizedExpression,
-    BinaryOperator,
-    Token,
-    isVoidExpression,
-    createPrinter,
-    EmitHint,
-    isPropertyAccessExpression,
-    isElementAccessExpression,
-    isCallExpression,
-    createPropertyAccessChain,
-    createToken,
-    isPrivateIdentifier,
-    createElementAccessChain,
-    createCallChain
-} from 'typescript';
+import { BinaryExpression, BinaryOperator, CallExpression, ConditionalExpression, createCallChain, createElementAccessChain, createNullishCoalesce, createPrinter, createPropertyAccessChain, createSourceFile, createToken, ElementAccessExpression, EmitHint, Expression, forEachChild, isBinaryExpression, isCallExpression, isElementAccessExpression, isIdentifier, isPrivateIdentifier, isPropertyAccessExpression, isVoidExpression, Node, PropertyAccessExpression, ScriptTarget, SyntaxKind, Token } from 'typescript';
 import { TypeScriptVersion } from './types';
 import { skipParens } from './utils';
 
