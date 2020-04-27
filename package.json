@@ -11,6 +11,10 @@
     "test": "npm run build:test && node ./dist/tests/index.js",
     "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts --write"
   },
+  "files": [
+    "src",
+    "dist"
+  ],
   "repository": {
     "type": "git",
     "url": "git+https://github.com/HearTao/ts-upgrade.git"
