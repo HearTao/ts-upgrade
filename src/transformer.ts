@@ -24,15 +24,38 @@ import {
     Token,
     TransformerFactory,
     visitEachChild,
-    visitNodes
+    visitNodes,
+    AsExpression,
+    isLiteralExpression,
+    TypeChecker,
+    createAsExpression,
+    createKeywordTypeNode,
+    createIdentifier,
+    createTypeReferenceNode,
+    isConstTypeReference,
+    isKeyword,
+    isObjectLiteralExpression,
+    ParenthesizedExpression,
+    PrefixUnaryExpression,
+    SymbolFlags,
+    EnumDeclaration,
+    isStringLiteralLike,
+    NodeFlags,
+    EnumMember,
+    Identifier,
+    nodeIsMissing,
+    Symbol
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { cast, skipParens } from './utils';
+import { deSynthesized } from './hack';
+import { isValidConstAssertionArgument } from './internal';
 
 export const transformer: (
     sourceFile: SourceFile,
+    checker: TypeChecker,
     target: TypeScriptVersion
-) => TransformerFactory<Node> = (sourceFile, target) => (context) => {
+) => TransformerFactory<Node> = (sourceFile, checker, target) => (context) => {
     return visitor;
 
     function visitor(node: Node): Node {
@@ -43,9 +66,40 @@ export const transformer: (
                 );
             case SyntaxKind.BinaryExpression:
                 return upgradeBinaryExpression(node as BinaryExpression);
+            case SyntaxKind.AsExpression:
+                return upgradeAsExpression(node as AsExpression);
             default:
                 return visitEachChild(node, visitor, context);
         }
+    }
+
+    function upgradeAsExpression(expr: AsExpression): Node {
+        if (target >= TypeScriptVersion.v3_4) {
+            const expression = skipParens(expr.expression);
+            if (
+                !isConstTypeReference(expr.type) &&
+                isValidConstAssertionArgument(expression, checker)
+            ) {
+                const synthesizedAssertionNode = createAsExpression(
+                    expression,
+                    createTypeReferenceNode('const', undefined)
+                );
+
+                const assertionNode = deSynthesized(
+                    synthesizedAssertionNode,
+                    sourceFile
+                );
+                const exprType = checker.getTypeAtLocation(assertionNode);
+                const nodeType = checker.getTypeFromTypeNode(expr.type);
+                if (checker.isTypeAssignableTo(nodeType, exprType)) {
+                    return createAsExpression(
+                        visitEachChild(expression, visitor, context),
+                        createTypeReferenceNode('const', undefined)
+                    );
+                }
+            }
+        }
+        return visitEachChild(expr, visitor, context);
     }
 
     function upgradeConditionalExpression(expr: ConditionalExpression): Node {
@@ -66,17 +120,10 @@ export const transformer: (
                     skipParens(expr.whenTrue) === condBranch
                         ? expr.whenFalse
                         : expr.whenTrue;
-                const left = visitEachChild(
-                    nullableConditionTarget,
-                    visitor,
-                    context
-                ) as Expression;
-                const right = visitEachChild(
-                    fallbackBranch,
-                    visitor,
-                    context
-                ) as Expression;
-                return createNullishCoalesce(left, right);
+                return createNullishCoalesce(
+                    visitEachChild(nullableConditionTarget, visitor, context),
+                    visitEachChild(fallbackBranch, visitor, context)
+                );
             }
         }
         return visitEachChild(expr, visitor, context);

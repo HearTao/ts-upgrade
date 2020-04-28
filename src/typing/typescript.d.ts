@@ -1,4 +1,4 @@
-import { Program } from 'typescript';
+import { Program, Type } from 'typescript';
 
 declare module 'typescript' {
     export namespace formatting {
@@ -28,4 +28,16 @@ declare module 'typescript' {
     export function getDefaultFormatCodeSettings(
         newLineCharacter?: string
     ): FormatCodeSettings;
+
+    interface TypeChecker {
+        isTypeAssignableTo(a: Type, b: Type): boolean;
+    }
+
+    export function isKeyword(token: SyntaxKind): boolean;
+
+    export function nodeIsMissing(node: Node | undefined): boolean;
+
+    export enum NodeFlags {
+        Ambient = 1 << 23
+    }
 }
