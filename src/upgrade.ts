@@ -260,7 +260,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             if ((target = isNullableEqualityExpression(condition))) {
                 return target;
             }
-            if ((target = isBinaryNullableEqualityExpression(condition))) {
+            if ((target = isBinaryNullableEqualityOrNotExpression(condition))) {
                 return target;
             }
         }
@@ -283,9 +283,9 @@ export function upgrade(code: string, target: TypeScriptVersion) {
     function isNullableEqualityExpression(expr: BinaryExpression) {
         return (
             isEqualityOrNotToNull(expr) ||
-            isStrictEqualityToNull(expr) ||
-            isStrictEqualityToUndefined(expr) ||
-            isStrictEqualityToVoidExpression(expr)
+            isStrictEqualityOrNotToNull(expr) ||
+            isStrictEqualityOrNotToUndefined(expr) ||
+            isStrictEqualityOrNotToVoidExpression(expr)
         );
     }
 
@@ -314,11 +314,11 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             : undefined;
     }
 
-    function isStrictEqualityToUndefined(expr: BinaryExpression) {
+    function isStrictEqualityOrNotToUndefined(expr: BinaryExpression) {
         const left = skipParens(expr.left);
         const right = skipParens(expr.right);
         return binaryCompare(
-            doStrictEqualityToUndefinedCompare,
+            doStrictEqualityOrNotToUndefinedCompare,
             left,
             expr.operatorToken,
             right
@@ -327,7 +327,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
 
     // expr === undefined || expr !== undefined
     // return expr
-    function doStrictEqualityToUndefinedCompare(
+    function doStrictEqualityOrNotToUndefinedCompare(
         left: Expression,
         operator: Token<BinaryOperator>,
         right: Expression
@@ -340,11 +340,11 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             : undefined;
     }
 
-    function isStrictEqualityToNull(expr: BinaryExpression) {
+    function isStrictEqualityOrNotToNull(expr: BinaryExpression) {
         const left = skipParens(expr.left);
         const right = skipParens(expr.right);
         return binaryCompare(
-            doStrictEqualityToNullCompare,
+            doStrictEqualityOrNotToNullCompare,
             left,
             expr.operatorToken,
             right
@@ -353,7 +353,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
 
     // expr === null || expr !== null
     // return expr
-    function doStrictEqualityToNullCompare(
+    function doStrictEqualityOrNotToNullCompare(
         left: Expression,
         operator: Token<BinaryOperator>,
         right: Expression
@@ -365,11 +365,11 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             : undefined;
     }
 
-    function isStrictEqualityToVoidExpression(expr: BinaryExpression) {
+    function isStrictEqualityOrNotToVoidExpression(expr: BinaryExpression) {
         const left = skipParens(expr.left);
         const right = skipParens(expr.right);
         return binaryCompare(
-            doStrictEqualityToVoidExpressionCompare,
+            doStrictEqualityOrNotToVoidExpressionCompare,
             left,
             expr.operatorToken,
             right
@@ -378,7 +378,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
 
     // expr === void * || expr !== void *
     // return expr
-    function doStrictEqualityToVoidExpressionCompare(
+    function doStrictEqualityOrNotToVoidExpressionCompare(
         left: Expression,
         operator: Token<BinaryOperator>,
         right: Expression
@@ -393,7 +393,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
     // expr === null || expr == undefined
     // expr !== null && expr !== undefined
     // return expr
-    function isBinaryNullableEqualityExpression(expr: BinaryExpression) {
+    function isBinaryNullableEqualityOrNotExpression(expr: BinaryExpression) {
         if (
             expr.operatorToken.kind !== SyntaxKind.BarBarToken &&
             expr.operatorToken.kind !== SyntaxKind.AmpersandAmpersandToken
