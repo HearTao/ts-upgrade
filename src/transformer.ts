@@ -44,11 +44,12 @@ import {
     EnumMember,
     Identifier,
     nodeIsMissing,
-    Symbol
+    Symbol,
+    TypeFormatFlags
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { cast, skipParens } from './utils';
-import { deSynthesized } from './hack';
+import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
 
 export const transformer: (
@@ -89,9 +90,38 @@ export const transformer: (
                     synthesizedAssertionNode,
                     sourceFile
                 );
-                const exprType = checker.getTypeAtLocation(assertionNode);
-                const nodeType = checker.getTypeFromTypeNode(expr.type);
-                if (checker.isTypeAssignableTo(nodeType, exprType)) {
+                const exprType = checker.getTypeAtLocation(expression);
+                const assignable = setParentContext(
+                    expression,
+                    assertionNode,
+                    () => {
+                        const assertionType = checker.getTypeAtLocation(
+                            assertionNode
+                        );
+                        const typeNodeType = checker.getTypeFromTypeNode(
+                            expr.type
+                        );
+                        const textExprTypeText = checker.typeToString(
+                            exprType,
+                            undefined,
+                            TypeFormatFlags.NoTruncation
+                        );
+                        const textNodeTypeText = checker.typeToString(
+                            typeNodeType,
+                            undefined,
+                            TypeFormatFlags.NoTruncation
+                        );
+                        return (
+                            textExprTypeText === textNodeTypeText &&
+                            checker.isTypeAssignableTo(
+                                typeNodeType,
+                                assertionType
+                            )
+                        );
+                    }
+                );
+
+                if (assignable) {
                     return createAsExpression(
                         visitEachChild(expression, visitor, context),
                         createTypeReferenceNode('const', undefined)
