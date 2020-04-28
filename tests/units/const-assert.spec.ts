@@ -33,12 +33,6 @@ describe('const assert', () => {
         expect(upgrade(code, version).trim()).toBe(after);
     });
 
-    it('should work with tuple', () => {
-        const code = `([1, 2, 3] as [number, number, number])`;
-        const after = `([1, 2, 3] as const);`;
-        expect(upgrade(code, version).trim()).toBe(after);
-    });
-
     it('should work with array literal', () => {
         const code = `([1, 2, 3] as [1, 2, 3])`;
         const after = `([1, 2, 3] as const);`;
@@ -55,4 +49,18 @@ describe('const assert', () => {
             after
         );
     });
+
+    it('should not work with numeric tuple', () => {
+        const code = `([1, 2, 3] as [number, number, number])`;
+        const after = `([1, 2, 3] as const);`;
+        expect(upgrade(code, version).trim()).not.toBe(after);
+    });
+
+    it('should not work with numeric array', () => {
+        const code = `([1, 2, 3] as number[])`;
+        const after = `([1, 2, 3] as const);`;
+        expect(upgrade(code, version).trim()).not.toBe(after);
+    });
 });
+
+var a: readonly [number, number, number] = [1, 2, 3] as const;
