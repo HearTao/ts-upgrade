@@ -3,15 +3,30 @@ import {
     createSourceFile,
     EmitHint,
     ScriptTarget,
-    transform
+    transform,
+    createProgram,
+    getDefaultCompilerOptions
 } from 'typescript';
 import { transformer } from './transformer';
 import { TypeScriptVersion } from './types';
+import createVHost from 'ts-ez-host';
 
 export function upgrade(code: string, target: TypeScriptVersion) {
-    const sourceFile = createSourceFile('', code, ScriptTarget.Latest);
+    const filename = 'dummy.ts';
+    const options = getDefaultCompilerOptions();
+    const host = createVHost();
 
-    const result = transform([sourceFile], [transformer(sourceFile, target)]);
+    host.writeFile(filename, code, false);
+
+    const program = createProgram([filename], options, host);
+    const checker = program.getTypeChecker();
+    const sourceFile = program.getSourceFile(filename)!;
+
+    const result = transform(
+        [sourceFile],
+        [transformer(sourceFile, checker, target)],
+        options
+    );
 
     const printer = createPrinter();
     const afterConvert = result.transformed[0];
