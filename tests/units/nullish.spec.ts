@@ -13,7 +13,7 @@ describe('nullish upgrade', () => {
         const code = `(a) == null ? 1 : a`;
         const after = `a ?? 1`;
         expect(upgrade(code, version)).toBe(after);
-    })
+    });
 
     it('should work with strict equal to null', () => {
         const code = `a === null ? 1 : a`;
@@ -35,6 +35,36 @@ describe('nullish upgrade', () => {
 
     it('should work with binary strict equal', () => {
         const code = `a === null || a === undefined ? 1 : a`;
+        const after = `a ?? 1`;
+        expect(upgrade(code, version)).toBe(after);
+    });
+
+    it('should work with not equal to null', () => {
+        const code = `a != null ? a : 1`;
+        const after = `a ?? 1`;
+        expect(upgrade(code, version)).toBe(after);
+    });
+
+    it('should work with strict not equal to null', () => {
+        const code = `a !== null ? a : 1`;
+        const after = `a ?? 1`;
+        expect(upgrade(code, version)).toBe(after);
+    });
+
+    it('should work with strict not equal to undefined', () => {
+        const code = `a !== undefined ? a : 1`;
+        const after = `a ?? 1`;
+        expect(upgrade(code, version)).toBe(after);
+    });
+
+    it('should work with strict not equal to void expression', () => {
+        const code = `a !== void 1 ? a : 1`;
+        const after = `a ?? 1`;
+        expect(upgrade(code, version)).toBe(after);
+    });
+
+    it('should work with binary strict equal', () => {
+        const code = `a !== null && a !== undefined ? a : 1`;
         const after = `a ?? 1`;
         expect(upgrade(code, version)).toBe(after);
     });

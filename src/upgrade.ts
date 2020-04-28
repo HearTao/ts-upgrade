@@ -58,14 +58,22 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             // a === null || a === undefined ? b : a
             // to
             // a ?? b
+            let condBranch: Expression | undefined;
             const nullableConditionTarget = getNullableConditionTarget(expr);
             if (
                 nullableConditionTarget &&
-                couldConvertIntoNullish(expr, nullableConditionTarget)
+                (condBranch = getNullishCondBranch(
+                    expr,
+                    nullableConditionTarget
+                ))
             ) {
+                const fallbackBranch =
+                    skipParens(expr.whenTrue) === condBranch
+                        ? expr.whenFalse
+                        : expr.whenTrue;
                 return createNullishCoalesce(
                     nullableConditionTarget,
-                    expr.whenTrue
+                    fallbackBranch
                 );
             }
         }
@@ -192,14 +200,35 @@ export function upgrade(code: string, target: TypeScriptVersion) {
         return chains;
     }
 
-    function couldConvertIntoNullish(
+    function getNullishCondBranch(
         cond: ConditionalExpression,
         nullableConditionTarget: Expression
-    ): boolean {
-        const left = skipParens(cond.whenFalse);
+    ): Expression | undefined {
+        const target = getNullishTargetBranch(cond);
+        if (!target) return undefined;
+
+        const left = skipParens(target);
         const right = skipParens(nullableConditionTarget);
 
-        return isEqualityExpression(left, right);
+        return isEqualityExpression(left, right) ? left : undefined;
+    }
+
+    function getNullishTargetBranch(cond: ConditionalExpression) {
+        if (isBinaryExpression(cond.condition)) {
+            switch (cond.condition.operatorToken.kind) {
+                case SyntaxKind.EqualsEqualsToken:
+                case SyntaxKind.EqualsEqualsEqualsToken:
+                case SyntaxKind.BarBarToken:
+                    return cond.whenFalse;
+                case SyntaxKind.ExclamationEqualsToken:
+                case SyntaxKind.ExclamationEqualsEqualsToken:
+                case SyntaxKind.AmpersandAmpersandToken:
+                    return cond.whenTrue;
+                default:
+                    return undefined;
+            }
+        }
+        return undefined;
     }
 
     function isEqualityExpression(left: Expression, right: Expression) {
@@ -253,32 +282,33 @@ export function upgrade(code: string, target: TypeScriptVersion) {
 
     function isNullableEqualityExpression(expr: BinaryExpression) {
         return (
-            isEqualityToNull(expr) ||
+            isEqualityOrNotToNull(expr) ||
             isStrictEqualityToNull(expr) ||
             isStrictEqualityToUndefined(expr) ||
             isStrictEqualityToVoidExpression(expr)
         );
     }
 
-    function isEqualityToNull(expr: BinaryExpression) {
+    function isEqualityOrNotToNull(expr: BinaryExpression) {
         const left = skipParens(expr.left);
         const right = skipParens(expr.right);
         return binaryCompare(
-            doEqualityToNullCompare,
+            doEqualityOrNotToNullCompare,
             left,
             expr.operatorToken,
             right
         );
     }
 
-    // expr == null
+    // expr == null || expr != null
     // return expr
-    function doEqualityToNullCompare(
+    function doEqualityOrNotToNullCompare(
         left: Expression,
         operator: Token<BinaryOperator>,
         right: Expression
     ) {
-        return operator.kind === SyntaxKind.EqualsEqualsToken &&
+        return (operator.kind === SyntaxKind.EqualsEqualsToken ||
+            operator.kind === SyntaxKind.ExclamationEqualsToken) &&
             right.kind === SyntaxKind.NullKeyword
             ? left
             : undefined;
@@ -295,14 +325,15 @@ export function upgrade(code: string, target: TypeScriptVersion) {
         );
     }
 
-    // expr === undefined
+    // expr === undefined || expr !== undefined
     // return expr
     function doStrictEqualityToUndefinedCompare(
         left: Expression,
         operator: Token<BinaryOperator>,
         right: Expression
     ) {
-        return operator.kind === SyntaxKind.EqualsEqualsEqualsToken &&
+        return (operator.kind === SyntaxKind.EqualsEqualsEqualsToken ||
+            operator.kind === SyntaxKind.ExclamationEqualsEqualsToken) &&
             (right.kind === SyntaxKind.UndefinedKeyword ||
                 (isIdentifier(right) && right.text === 'undefined'))
             ? left
@@ -320,14 +351,15 @@ export function upgrade(code: string, target: TypeScriptVersion) {
         );
     }
 
-    // expr === null
+    // expr === null || expr !== null
     // return expr
     function doStrictEqualityToNullCompare(
         left: Expression,
         operator: Token<BinaryOperator>,
         right: Expression
     ) {
-        return operator.kind === SyntaxKind.EqualsEqualsEqualsToken &&
+        return (operator.kind === SyntaxKind.EqualsEqualsEqualsToken ||
+            operator.kind === SyntaxKind.ExclamationEqualsEqualsToken) &&
             right.kind === SyntaxKind.NullKeyword
             ? left
             : undefined;
@@ -344,23 +376,28 @@ export function upgrade(code: string, target: TypeScriptVersion) {
         );
     }
 
-    // expr === void *
+    // expr === void * || expr !== void *
     // return expr
     function doStrictEqualityToVoidExpressionCompare(
         left: Expression,
         operator: Token<BinaryOperator>,
         right: Expression
     ) {
-        return operator.kind === SyntaxKind.EqualsEqualsEqualsToken &&
+        return (operator.kind === SyntaxKind.EqualsEqualsEqualsToken ||
+            operator.kind === SyntaxKind.ExclamationEqualsEqualsToken) &&
             isVoidExpression(right)
             ? left
             : undefined;
     }
 
     // expr === null || expr == undefined
+    // expr !== null && expr !== undefined
     // return expr
     function isBinaryNullableEqualityExpression(expr: BinaryExpression) {
-        if (expr.operatorToken.kind !== SyntaxKind.BarBarToken)
+        if (
+            expr.operatorToken.kind !== SyntaxKind.BarBarToken &&
+            expr.operatorToken.kind !== SyntaxKind.AmpersandAmpersandToken
+        )
             return undefined;
         if (!isBinaryExpression(expr.left) || !isBinaryExpression(expr.right))
             return undefined;
