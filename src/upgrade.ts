@@ -1,4 +1,32 @@
-import { BinaryExpression, BinaryOperator, CallExpression, ConditionalExpression, createCallChain, createElementAccessChain, createNullishCoalesce, createPrinter, createPropertyAccessChain, createSourceFile, createToken, ElementAccessExpression, EmitHint, Expression, forEachChild, isBinaryExpression, isCallExpression, isElementAccessExpression, isIdentifier, isPrivateIdentifier, isPropertyAccessExpression, isVoidExpression, Node, PropertyAccessExpression, ScriptTarget, SyntaxKind, Token } from 'typescript';
+import {
+    BinaryExpression,
+    BinaryOperator,
+    CallExpression,
+    ConditionalExpression,
+    createCallChain,
+    createElementAccessChain,
+    createNullishCoalesce,
+    createPrinter,
+    createPropertyAccessChain,
+    createSourceFile,
+    createToken,
+    ElementAccessExpression,
+    EmitHint,
+    Expression,
+    forEachChild,
+    isBinaryExpression,
+    isCallExpression,
+    isElementAccessExpression,
+    isIdentifier,
+    isPrivateIdentifier,
+    isPropertyAccessExpression,
+    isVoidExpression,
+    Node,
+    PropertyAccessExpression,
+    ScriptTarget,
+    SyntaxKind,
+    Token
+} from 'typescript';
 import { TypeScriptVersion } from './types';
 import { skipParens } from './utils';
 
@@ -27,7 +55,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
 
     function upgradeConditionalExpression(expr: ConditionalExpression): Node {
         if (target >= TypeScriptVersion.v3_7) {
-            // a !== null && a !== undefined ? a : b
+            // a === null || a === undefined ? b : a
             // to
             // a ?? b
             const nullableConditionTarget = getNullableConditionTarget(expr);
@@ -37,7 +65,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             ) {
                 return createNullishCoalesce(
                     nullableConditionTarget,
-                    expr.whenFalse
+                    expr.whenTrue
                 );
             }
         }
@@ -168,7 +196,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
         cond: ConditionalExpression,
         nullableConditionTarget: Expression
     ): boolean {
-        const left = skipParens(cond.whenTrue);
+        const left = skipParens(cond.whenFalse);
         const right = skipParens(nullableConditionTarget);
 
         return isEqualityExpression(left, right);
