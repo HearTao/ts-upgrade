@@ -1,5 +1,3 @@
-import { FileTextChanges } from 'typescript';
-
 export enum TypeScriptVersion {
     Before_v_2_0,
     v2_0,

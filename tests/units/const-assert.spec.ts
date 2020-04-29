@@ -52,9 +52,9 @@ describe('const assert', () => {
         prettierEqTo(upgrade(code, version), after);
     });
 
-    it("should work with two spans", () => {
+    it('should work with two spans', () => {
         const code = `call([1, 2, 3] as [1, 2, 3], [4, 5] as [4, 5])`;
         const after = `call([1, 2, 3] as const, [4, 5] as const)`;
         prettierEqTo(upgrade(code, version), after);
-    })
+    });
 });

@@ -1,25 +1,17 @@
-import {
-    createPrinter,
-    createSourceFile,
-    EmitHint,
-    ScriptTarget,
-    transform,
-    formatting,
-    createProgram,
-    getDefaultCompilerOptions,
-    textChanges,
-    getDefaultFormatCodeSettings,
-    UserPreferences,
-    CompilerOptions,
-    IScriptSnapshot,
-    TransformationResult,
-    Node,
-    Program
-} from 'typescript';
-import { visit } from './visitor';
-import { TypeScriptVersion } from './types';
 import createVHost, { VHost } from 'ts-ez-host';
+import {
+    CompilerOptions,
+    createProgram,
+    formatting,
+    getDefaultCompilerOptions,
+    getDefaultFormatCodeSettings,
+    IScriptSnapshot,
+    Program,
+    textChanges
+} from 'typescript';
 import { ProxyChangesTracker } from './changes';
+import { TypeScriptVersion } from './types';
+import { visit } from './visitor';
 
 class VLSHost extends VHost {
     getCompilationSettings(): CompilerOptions {
@@ -52,10 +44,15 @@ export function upgrade(code: string, target: TypeScriptVersion) {
 
     let i = 0;
     let text = '';
-    let lastProgram: Program | undefined = undefined
+    let lastProgram: Program | undefined = undefined;
     let needAnotherPass = true;
     while (needAnotherPass) {
-        const program = lastProgram = createProgram([filename], options, host, lastProgram);
+        const program = (lastProgram = createProgram(
+            [filename],
+            options,
+            host,
+            lastProgram
+        ));
         const checker = program.getTypeChecker();
 
         const sourceFile = program.getSourceFile(filename)!;

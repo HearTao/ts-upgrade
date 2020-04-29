@@ -1,17 +1,22 @@
 import {
+    AsExpression,
     BinaryExpression,
     BinaryOperator,
     CallExpression,
     ConditionalExpression,
+    createAsExpression,
     createCallChain,
     createElementAccessChain,
     createNullishCoalesce,
     createPropertyAccessChain,
     createToken,
+    createTypeReferenceNode,
     ElementAccessExpression,
     Expression,
+    forEachChild,
     isBinaryExpression,
     isCallExpression,
+    isConstTypeReference,
     isElementAccessExpression,
     isIdentifier,
     isPrivateIdentifier,
@@ -21,39 +26,15 @@ import {
     PropertyAccessExpression,
     SourceFile,
     SyntaxKind,
-    Token,
-    TransformerFactory,
-    visitEachChild,
-    visitNodes,
-    AsExpression,
-    isLiteralExpression,
-    TypeChecker,
-    createAsExpression,
-    createKeywordTypeNode,
-    createIdentifier,
-    createTypeReferenceNode,
-    isConstTypeReference,
-    isKeyword,
-    isObjectLiteralExpression,
-    ParenthesizedExpression,
-    PrefixUnaryExpression,
-    SymbolFlags,
-    EnumDeclaration,
-    isStringLiteralLike,
-    NodeFlags,
-    EnumMember,
-    Identifier,
-    nodeIsMissing,
-    Symbol,
-    TypeFormatFlags,
     textChanges,
-    forEachChild,
-    visitNode
+    Token,
+    TypeChecker,
+    TypeFormatFlags
 } from 'typescript';
 import { TypeScriptVersion } from '.';
-import { cast, skipParens } from './utils';
 import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
+import { cast, skipParens } from './utils';
 
 export const visit = (
     sourceFile: SourceFile,
