@@ -2,7 +2,6 @@ import {
     textChanges,
     SourceFile,
     Node,
-    TextRange,
     startEndOverlapsWithStartEnd,
     BaseChange
 } from 'typescript';
