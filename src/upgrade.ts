@@ -18,6 +18,7 @@ import {
 import { transformer } from './transformer';
 import { TypeScriptVersion } from './types';
 import createVHost, { VHost } from 'ts-ez-host';
+import { ProxyChangesTracker } from './changes';
 
 class VLSHost extends VHost {
     getCompilationSettings(): CompilerOptions {
@@ -53,7 +54,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
     const formatContext = formatting.getFormatContext(formatCodeSettings);
 
     let result: TransformationResult<Node> | undefined;
-
+    let needAnotherPass = false
     const changes = textChanges.ChangeTracker.with(
         {
             formatContext,
@@ -61,18 +62,20 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             preferences: {}
         },
         (changeTracker) => {
+            const proxyChangeTracker = new ProxyChangesTracker(changeTracker);  
             result = transform(
                 [sourceFile],
-                [transformer(sourceFile, checker, changeTracker, target)],
+                [transformer(sourceFile, checker, proxyChangeTracker, target)],
                 options
             );
+            needAnotherPass = proxyChangeTracker.needAnotherPass()
         }
     );
 
-    // let text = sourceFile.getText();
-    // changes.forEach(change => {
-    //     text = textChanges.applyChanges(text, change.textChanges)
-    // })
+    let text = sourceFile.getText();
+    changes.forEach(change => {
+        text = textChanges.applyChanges(text, change.textChanges)
+    })
 
     const printer = createPrinter();
     const afterConvert = result!.transformed[0];
