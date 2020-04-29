@@ -46,27 +46,24 @@ import {
     nodeIsMissing,
     Symbol,
     TypeFormatFlags,
-    textChanges
+    textChanges,
+    forEachChild,
+    visitNode
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { cast, skipParens } from './utils';
 import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
 
-export const transformer: (
+export const visit = (
     sourceFile: SourceFile,
     checker: TypeChecker,
     changeTracker: textChanges.ChangeTracker,
     target: TypeScriptVersion
-) => TransformerFactory<Node> = (
-    sourceFile,
-    checker,
-    changeTracker,
-    target
-) => (context) => {
-    return visitor;
+): void => {
+    visitor(sourceFile);
 
-    function visitor(node: Node): Node {
+    function visitor(node: Node): Node | undefined {
         switch (node.kind) {
             case SyntaxKind.ConditionalExpression:
                 return upgradeConditionalExpression(
@@ -77,11 +74,11 @@ export const transformer: (
             case SyntaxKind.AsExpression:
                 return upgradeAsExpression(node as AsExpression);
             default:
-                return visitEachChild(node, visitor, context);
+                return forEachChild(node, visitor);
         }
     }
 
-    function upgradeAsExpression(expr: AsExpression): Node {
+    function upgradeAsExpression(expr: AsExpression): Node | undefined {
         if (target >= TypeScriptVersion.v3_4) {
             const expression = skipParens(expr.expression);
             if (
@@ -130,18 +127,19 @@ export const transformer: (
 
                 if (assignable) {
                     const newNode = createAsExpression(
-                        visitEachChild(expression, visitor, context),
+                        expression,
                         createTypeReferenceNode('const', undefined)
                     );
                     changeTracker.replaceNode(sourceFile, expr, newNode);
-                    return newNode;
                 }
             }
         }
-        return visitEachChild(expr, visitor, context);
+        return forEachChild(expr, visitor);
     }
 
-    function upgradeConditionalExpression(expr: ConditionalExpression): Node {
+    function upgradeConditionalExpression(
+        expr: ConditionalExpression
+    ): Node | undefined {
         if (target >= TypeScriptVersion.v3_7) {
             // a === null || a === undefined ? b : a
             // to
@@ -160,25 +158,24 @@ export const transformer: (
                         ? expr.whenFalse
                         : expr.whenTrue;
                 const newNode = createNullishCoalesce(
-                    visitEachChild(nullableConditionTarget, visitor, context),
-                    visitEachChild(fallbackBranch, visitor, context)
+                    nullableConditionTarget,
+                    fallbackBranch
                 );
                 changeTracker.replaceNode(sourceFile, expr, newNode);
-                return newNode;
             }
         }
-        return visitEachChild(expr, visitor, context);
+        return forEachChild(expr, visitor);
     }
 
-    function upgradeBinaryExpression(expr: BinaryExpression): Node {
+    function upgradeBinaryExpression(expr: BinaryExpression): Node | undefined {
         // a && a.b && a.b["c"] && a.b["c"]()
         // to
         // a?.b?.["c"]?.()
         const optionalChains = getOptionalChains(expr);
         if (optionalChains) {
-            return createOptionalChains(expr, optionalChains);
+            createOptionalChains(expr, optionalChains);
         }
-        return visitEachChild(expr, visitor, context);
+        return forEachChild(expr, visitor);
     }
 
     function createOptionalChains(
@@ -208,23 +205,22 @@ export const transformer: (
         switch (expr.kind) {
             case SyntaxKind.PropertyAccessExpression:
                 return createPropertyAccessChain(
-                    visitEachChild(left, visitor, context),
+                    left,
                     createToken(SyntaxKind.QuestionDotToken),
                     cast(expr.name, isIdentifier)
                 );
             case SyntaxKind.ElementAccessExpression:
                 return createElementAccessChain(
-                    visitEachChild(left, visitor, context),
+                    left,
                     createToken(SyntaxKind.QuestionDotToken),
-                    visitEachChild(expr.argumentExpression, visitor, context)
+                    expr.argumentExpression
                 );
             case SyntaxKind.CallExpression:
-                const call = expr as CallExpression;
                 return createCallChain(
-                    visitEachChild(left, visitor, context),
+                    left,
                     createToken(SyntaxKind.QuestionDotToken),
-                    call.typeArguments,
-                    visitNodes(call.arguments, visitor)
+                    expr.typeArguments,
+                    expr.arguments
                 );
         }
     }
