@@ -5,7 +5,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "lint": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts ./*.js",
+    "lint": "prettier -c --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts ./*.js",
     "build": "tsc --project ./tsconfig.json",
     "test": "jest",
     "coverage": "jest --coverage",
@@ -27,7 +27,9 @@
   "homepage": "https://github.com/HearTao/ts-upgrade#readme",
   "dependencies": {
     "cross-env": "^7.0.2",
+    "memfs": "^3.1.2",
     "prettier": "^2.0.5",
+    "ts-ez-host": "^0.0.7",
     "ts-node": "^8.9.0",
     "typescript": "^3.8.3"
   },
