@@ -13,7 +13,8 @@ import {
     CompilerOptions,
     IScriptSnapshot,
     TransformationResult,
-    Node
+    Node,
+    Program
 } from 'typescript';
 import { visit } from './visitor';
 import { TypeScriptVersion } from './types';
@@ -49,19 +50,16 @@ export function upgrade(code: string, target: TypeScriptVersion) {
     const formatCodeSettings = getDefaultFormatCodeSettings();
     const formatContext = formatting.getFormatContext(formatCodeSettings);
 
-    let text = '';
-    let lastText = '';
-    let needAnotherPass = true;
     let i = 0;
+    let text = '';
+    let lastProgram: Program | undefined = undefined
+    let needAnotherPass = true;
     while (needAnotherPass) {
-        const program = createProgram([filename], options, host);
+        const program = lastProgram = createProgram([filename], options, host, lastProgram);
         const checker = program.getTypeChecker();
 
         const sourceFile = program.getSourceFile(filename)!;
-        if (sourceFile.getText() === lastText) {
-            throw new Error('???');
-        }
-        lastText = text = sourceFile.getText();
+        text = sourceFile.getText();
         const changes = textChanges.ChangeTracker.with(
             {
                 formatContext,
