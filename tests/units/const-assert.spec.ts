@@ -42,13 +42,19 @@ describe('const assert', () => {
 
     it('should not work with numeric tuple', () => {
         const code = `([1, 2, 3] as [number, number, number])`;
-        const after = `([1, 2, 3] as const)`;
-        expect(upgrade(code, version).trim()).not.toBe(after);
+        const after = `([1, 2, 3] as [number, number, number])`;
+        prettierEqTo(upgrade(code, version), after);
     });
 
     it('should not work with numeric array', () => {
         const code = `([1, 2, 3] as number[])`;
-        const after = `([1, 2, 3] as const)`;
-        expect(upgrade(code, version).trim()).not.toBe(after);
+        const after = `([1, 2, 3] as number[])`;
+        prettierEqTo(upgrade(code, version), after);
     });
+
+    it("should work with two spans", () => {
+        const code = `call([1, 2, 3] as [1, 2, 3], [4, 5] as [4, 5])`;
+        const after = `call([1, 2, 3] as const, [4, 5] as const)`;
+        prettierEqTo(upgrade(code, version), after);
+    })
 });
