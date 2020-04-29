@@ -22,7 +22,3 @@ export enum TypeScriptVersion {
     v3_7,
     V3_8
 }
-
-export interface UpgradeContext {
-    changes: FileTextChanges[];
-}

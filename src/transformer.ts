@@ -52,7 +52,6 @@ import { TypeScriptVersion } from '.';
 import { cast, skipParens } from './utils';
 import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
-import { UpgradeContext } from './types';
 
 export const transformer: (
     sourceFile: SourceFile,

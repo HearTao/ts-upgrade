@@ -110,9 +110,20 @@ declare module 'typescript' {
         isTypeAssignableTo(a: Type, b: Type): boolean;
     }
 
+    interface SourceFile {
+        path: string
+    }
+
+    interface BaseChange {
+        readonly sourceFile: SourceFile;
+        readonly range: TextRange;
+    }
+
     export function isKeyword(token: SyntaxKind): boolean;
 
     export function nodeIsMissing(node: Node | undefined): boolean;
+
+    export function startEndOverlapsWithStartEnd(start1: number, end1: number, start2: number, end2: number): boolean;
 
     export enum NodeFlags {
         Ambient = 1 << 23
