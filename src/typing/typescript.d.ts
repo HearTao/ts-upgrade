@@ -111,7 +111,7 @@ declare module 'typescript' {
     }
 
     interface SourceFile {
-        path: string
+        path: string;
     }
 
     interface BaseChange {
@@ -123,7 +123,12 @@ declare module 'typescript' {
 
     export function nodeIsMissing(node: Node | undefined): boolean;
 
-    export function startEndOverlapsWithStartEnd(start1: number, end1: number, start2: number, end2: number): boolean;
+    export function startEndOverlapsWithStartEnd(
+        start1: number,
+        end1: number,
+        start2: number,
+        end2: number
+    ): boolean;
 
     export enum NodeFlags {
         Ambient = 1 << 23

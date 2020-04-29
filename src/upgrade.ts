@@ -54,7 +54,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
     const formatContext = formatting.getFormatContext(formatCodeSettings);
 
     let result: TransformationResult<Node> | undefined;
-    let needAnotherPass = false
+    let needAnotherPass = false;
     const changes = textChanges.ChangeTracker.with(
         {
             formatContext,
@@ -62,20 +62,20 @@ export function upgrade(code: string, target: TypeScriptVersion) {
             preferences: {}
         },
         (changeTracker) => {
-            const proxyChangeTracker = new ProxyChangesTracker(changeTracker);  
+            const proxyChangeTracker = new ProxyChangesTracker(changeTracker);
             result = transform(
                 [sourceFile],
                 [transformer(sourceFile, checker, proxyChangeTracker, target)],
                 options
             );
-            needAnotherPass = proxyChangeTracker.needAnotherPass()
+            needAnotherPass = proxyChangeTracker.needAnotherPass();
         }
     );
 
     let text = sourceFile.getText();
-    changes.forEach(change => {
-        text = textChanges.applyChanges(text, change.textChanges)
-    })
+    changes.forEach((change) => {
+        text = textChanges.applyChanges(text, change.textChanges);
+    });
 
     const printer = createPrinter();
     const afterConvert = result!.transformed[0];
