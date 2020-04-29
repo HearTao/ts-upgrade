@@ -28,7 +28,7 @@ export function cast<T extends Node, U extends T>(
 
 export function lastOrUndefined<T>(list: readonly T[]): T | undefined {
     if (list.length) {
-        return list[list.length - 1]
+        return list[list.length - 1];
     }
-    return undefined
+    return undefined;
 }
