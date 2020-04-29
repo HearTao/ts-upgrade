@@ -1976,6 +1976,11 @@ fragment-cache@^0.2.1:
   dependencies:
     map-cache "^0.2.2"
 
+fs-monkey@1.0.0:
+  version "1.0.0"
+  resolved "https://registry.yarnpkg.com/fs-monkey/-/fs-monkey-1.0.0.tgz#b1fe36b2d8a78463fd0b8fd1463b355952743bd0"
+  integrity sha512-nxkkzQ5Ga+ETriXxIof4TncyMSzrV9jFIF+kGN16nw5CiAdWAnG/2FgM7CHhRenW1EBiDx+r1tf/P78HGKCgnA==
+
 fs.realpath@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/fs.realpath/-/fs.realpath-1.0.0.tgz#1504ad2523158caa40db4a2787cb01411994ea4f"
@@ -2963,6 +2968,13 @@ map-visit@^1.0.0:
   integrity sha1-7Nyo8TFE5mDxtb1B8S80edmN+48=
   dependencies:
     object-visit "^1.0.0"
+
+memfs@^3.1.2:
+  version "3.1.2"
+  resolved "https://registry.yarnpkg.com/memfs/-/memfs-3.1.2.tgz#2bb51600dacec67ed35677b1185abb708b7d2ad6"
+  integrity sha512-YubKuE+RGSdpZcRq2Nih8HcHj3LrqndsDFNB9IFjrgwzdM4eq+fImlDMfNm/HdRhYRkLdUecHGIpdz+wyrqlDg==
+  dependencies:
+    fs-monkey "1.0.0"
 
 merge-stream@^2.0.0:
   version "2.0.0"
@@ -4031,6 +4043,11 @@ tr46@^1.0.1:
   integrity sha1-qLE/1r/SSJUZZ0zN5VujaTtwbQk=
   dependencies:
     punycode "^2.1.0"
+
+ts-ez-host@^0.0.7:
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/ts-ez-host/-/ts-ez-host-0.0.7.tgz#fc3db618996c6cafcb20957f82f27a1dab83a909"
+  integrity sha512-kaDw7tIxB0aQfiiWHWdLlpi7hKN1C+9r9A4TlNLY517B1y7QEhonX6mAs/DMsolsQZY7lshNHhSURUPhw/cL+Q==
 
 ts-node@^8.9.0:
   version "8.9.0"
