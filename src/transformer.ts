@@ -45,18 +45,26 @@ import {
     Identifier,
     nodeIsMissing,
     Symbol,
-    TypeFormatFlags
+    TypeFormatFlags,
+    textChanges
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { cast, skipParens } from './utils';
 import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
+import { UpgradeContext } from './types';
 
 export const transformer: (
     sourceFile: SourceFile,
     checker: TypeChecker,
+    changeTracker: textChanges.ChangeTracker,
     target: TypeScriptVersion
-) => TransformerFactory<Node> = (sourceFile, checker, target) => (context) => {
+) => TransformerFactory<Node> = (
+    sourceFile,
+    checker,
+    changeTracker,
+    target
+) => (context) => {
     return visitor;
 
     function visitor(node: Node): Node {
@@ -122,10 +130,12 @@ export const transformer: (
                 );
 
                 if (assignable) {
-                    return createAsExpression(
+                    const newNode = createAsExpression(
                         visitEachChild(expression, visitor, context),
                         createTypeReferenceNode('const', undefined)
                     );
+                    changeTracker.replaceNode(sourceFile, expr, newNode);
+                    return newNode;
                 }
             }
         }
@@ -150,10 +160,12 @@ export const transformer: (
                     skipParens(expr.whenTrue) === condBranch
                         ? expr.whenFalse
                         : expr.whenTrue;
-                return createNullishCoalesce(
+                const newNode = createNullishCoalesce(
                     visitEachChild(nullableConditionTarget, visitor, context),
                     visitEachChild(fallbackBranch, visitor, context)
                 );
+                changeTracker.replaceNode(sourceFile, expr, newNode);
+                return newNode;
             }
         }
         return visitEachChild(expr, visitor, context);
@@ -165,12 +177,13 @@ export const transformer: (
         // a?.b?.["c"]?.()
         const optionalChains = getOptionalChains(expr);
         if (optionalChains) {
-            return createOptionalChains(optionalChains);
+            return createOptionalChains(expr, optionalChains);
         }
         return visitEachChild(expr, visitor, context);
     }
 
     function createOptionalChains(
+        expr: BinaryExpression,
         chains: ChainableExpression[]
     ): ChainableExpression {
         const fistChain = chains[0];
@@ -185,6 +198,7 @@ export const transformer: (
                 lastChain
             );
         }
+        changeTracker.replaceNode(sourceFile, expr, lastChain);
         return lastChain;
     }
 

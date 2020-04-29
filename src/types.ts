@@ -1,3 +1,5 @@
+import { FileTextChanges } from 'typescript';
+
 export enum TypeScriptVersion {
     Before_v_2_0,
     v2_0,
@@ -19,4 +21,8 @@ export enum TypeScriptVersion {
     v3_6,
     v3_7,
     V3_8
+}
+
+export interface UpgradeContext {
+    changes: FileTextChanges[];
 }
