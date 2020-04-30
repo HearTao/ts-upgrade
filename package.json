@@ -26,6 +26,7 @@
   },
   "homepage": "https://github.com/HearTao/ts-upgrade#readme",
   "dependencies": {
+    "codecov": "^3.6.5",
     "cross-env": "^7.0.2",
     "memfs": "^3.1.2",
     "prettier": "^2.0.5",
