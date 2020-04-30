@@ -9,6 +9,7 @@
     "build": "tsc --project ./tsconfig.json",
     "test": "jest",
     "coverage": "jest --coverage",
+    "upload-cov": "codecov",
     "prettier": "prettier --config ./prettier.config.js ./src/**/*.ts ./tests/**/*.ts ./*.js --write"
   },
   "files": [
