@@ -24,7 +24,7 @@ jobs:
     - run: yarn
     - run: yarn lint
     - run: yarn coverage
-    - run: codecov --token=${CODECOV_TOKEN}
+    - run: yarn codecov --token=${CODECOV_TOKEN}
   
   build:
     runs-on: ubuntu-latest
