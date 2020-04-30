@@ -22,6 +22,12 @@ describe('const assert', () => {
         prettierEqTo(upgrade(code, version), after);
     });
 
+    it('should work with paren', () => {
+        const code = `(-1) as -1`;
+        const after = `(-1) as const`;
+        prettierEqTo(upgrade(code, version), after);
+    });
+
     it('should work with object literal', () => {
         const code = `({ a: "123" } as { a: "123" })`;
         const after = `({ a: "123" } as const)`;
@@ -37,6 +43,18 @@ describe('const assert', () => {
     it('should work with enum member', () => {
         const code = `enum A { f }\n A.f as A.f`;
         const after = `enum A { f }\n A.f as const`;
+        prettierEqTo(upgrade(code, version), after);
+    });
+
+    it('should work with complex enum', () => {
+        const code = `enum A { f = "f", ff = -1 }\n A.ff as A.ff`;
+        const after = `enum A { f = "f", ff = -1 }\n A.ff as const`;
+        prettierEqTo(upgrade(code, version), after);
+    });
+
+    it('should work with complex string enum', () => {
+        const code = `enum A { f = "f", ff = "f" + "f" }\n A.ff as A.ff`;
+        const after = `enum A { f = "f", ff = "f" + "f" }\n A.ff as const`;
         prettierEqTo(upgrade(code, version), after);
     });
 
