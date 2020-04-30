@@ -26,7 +26,7 @@ describe('optional chains upgrade', () => {
         const code = `a.b.c && a.b.c.d && a.b.c.d.e.f`;
         const after = `a.b.c?.d?.e.f`;
         prettierEqTo(upgrade(code, version), after);
-    })
+    });
 
     it('should work with a part with chains', () => {
         const code = `a.b.c && a.b.c.d && a.b.c.d.e.f.g.h`;
