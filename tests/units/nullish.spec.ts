@@ -10,6 +10,23 @@ describe('nullish upgrade', () => {
         prettierEqTo(upgrade(code, version), after);
     });
 
+    it('should only work on part of expression', () => {
+        const code = `foo ? a == null ? 1 : a : 2`;
+        const after = `foo ? a ?? 1 : 2`;
+        prettierEqTo(upgrade(code, version), after);
+    });
+
+    var a =
+        window.name || window.status !== null
+            ? window.name || window.status
+            : 1;
+
+    it('should work with logical expression', () => {
+        const code = `(a || b) !== null ? (a || b) : 2`;
+        const after = `(a || b) ?? 2`;
+        prettierEqTo(upgrade(code, version), after);
+    });
+
     it('should work with parens', () => {
         const code = `(a) == null ? 1 : a`;
         const after = `a ?? 1`;
