@@ -23,7 +23,8 @@ jobs:
     - run: npm install -g yarn
     - run: yarn
     - run: yarn lint
-    - run: yarn test
+    - run: yarn coverage
+    - run: codecov --token=${CODECOV_TOKEN}
   
   build:
     runs-on: ubuntu-latest
