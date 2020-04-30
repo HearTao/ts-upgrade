@@ -7,7 +7,10 @@ const prettierOptions: Options = {
 };
 
 export function prettierEqTo(val: string, to: string) {
-    expect(format(val, prettierOptions).trim()).toBe(
-        format(to, prettierOptions).trim()
-    );
+    expect(
+        format(val, prettierOptions)
+            .trim()
+            .replace(/\n+/gm, '\n')
+            .replace(/^\n*|\n*$/gm, '')
+    ).toBe(format(to, prettierOptions).trim());
 }

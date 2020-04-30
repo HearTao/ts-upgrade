@@ -99,6 +99,17 @@ declare module 'typescript' {
                 newNode: Node,
                 options?: ChangeNodeOptions
             ): void;
+
+            delete(
+                sourceFile: SourceFile,
+                node: Node | NodeArray<TypeParameterDeclaration>
+            ): void;
+
+            public insertNodeAfter(
+                sourceFile: SourceFile,
+                after: Node,
+                newNode: Node
+            ): void;
         }
     }
 
