@@ -29,9 +29,7 @@ import {
     textChanges,
     Token,
     TypeChecker,
-    TypeFormatFlags,
-    createPrinter,
-    EmitHint
+    TypeFormatFlags
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
@@ -172,15 +170,9 @@ export const visit = (
     ): void {
         let prefix = firstChain;
         let lastChain = firstChain;
-        const printer = createPrinter();
         for (let i = 0; i < chains.length; ++i) {
             const chain = chains[i];
             prefix = assertDef(replacePrefix(lastChain, chain, prefix));
-            const prefixText = printer.printNode(
-                EmitHint.Unspecified,
-                prefix,
-                sourceFile
-            );
             lastChain = chain;
         }
         changeTracker.replaceNode(sourceFile, expr, prefix);
