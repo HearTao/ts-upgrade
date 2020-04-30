@@ -12,8 +12,15 @@ export function skipParens(node: Expression) {
     return node;
 }
 
-export function assertDef<T>(v: T | null | undefined): v is T {
+export function isDef<T>(v: T | null | undefined): v is T {
     return v !== null && v !== undefined;
+}
+
+export function assertDef<T>(v: T | null | undefined): T {
+    if (isDef(v)) {
+        return v;
+    }
+    throw new Error('invalid assert def');
 }
 
 export function cast<T extends Node, U extends T>(
@@ -26,8 +33,10 @@ export function cast<T extends Node, U extends T>(
     return node;
 }
 
-export function lastOrUndefined<T>(list: readonly T[]): T | undefined {
-    if (list.length) {
+export function lastOrUndefined<T>(
+    list: readonly T[] | undefined
+): T | undefined {
+    if (list && list.length) {
         return list[list.length - 1];
     }
     return undefined;
