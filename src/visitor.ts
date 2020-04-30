@@ -51,7 +51,7 @@ import {
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
-import { cast, skipParens, assertDef } from './utils';
+import { cast, skipParens, lastOrUndefined, assertDef, isDef } from './utils';
 
 export const visit = (
     sourceFile: SourceFile,
@@ -88,8 +88,8 @@ export const visit = (
     }
 
     function upgradeExportAsNsExpression(children: Node[]): void {
-        const namespaceImportPairs = children.map(getNamespaceImport).filter(assertDef);
-        const namedExportsPairs = children.map(getNamesExports).filter(assertDef);
+        const namespaceImportPairs = children.map(getNamespaceImport).filter(isDef);
+        const namedExportsPairs = children.map(getNamesExports).filter(isDef);
         for (const [exportNode, named] of namedExportsPairs) {
             const exportSpecifiers = named.elements;
             const newExports: ExportSpecifier[] = [];
@@ -246,52 +246,86 @@ export const visit = (
         // a?.b?.["c"]?.()
         const optionalChains = getOptionalChains(expr);
         if (optionalChains) {
-            createOptionalChains(expr, optionalChains);
+            createOptionalChains(
+                expr,
+                optionalChains.first,
+                optionalChains.chains
+            );
         }
         return forEachChild(expr, visitor);
     }
 
     function createOptionalChains(
         expr: BinaryExpression,
+        firstChain: Expression,
         chains: ChainableExpression[]
-    ): ChainableExpression {
-        const fistChain = chains[0];
-        let lastChain = createOptionalChainByChainableExpression(
-            fistChain,
-            fistChain.expression
-        );
-        for (let i = 1; i < chains.length; ++i) {
+    ): void {
+        let prefix = firstChain;
+        let lastChain = firstChain;
+        for (let i = 0; i < chains.length; ++i) {
             const chain = chains[i];
-            lastChain = createOptionalChainByChainableExpression(
-                chain,
-                lastChain
-            );
+            prefix = assertDef(replacePrefix(lastChain, chain, prefix));
+            lastChain = chain;
         }
-        changeTracker.replaceNode(sourceFile, expr, lastChain);
-        return lastChain;
+        changeTracker.replaceNode(sourceFile, expr, prefix);
+    }
+
+    function replacePrefix(
+        expr: Expression,
+        chains: ChainableExpression,
+        to: Expression
+    ) {
+        const prefix = getPrefixIfEquality(expr, chains);
+        const lastChainOptional = lastOrUndefined(prefix);
+        if (!lastChainOptional) return undefined;
+        const lastChain = lastChainOptional;
+
+        const [result] = replaceWorker(chains);
+        return result;
+
+        function replaceWorker(chain: Expression): [Expression, boolean] {
+            if (isEqualityExpression(chain, lastChain)) {
+                return [to, false];
+            }
+
+            const chainable = cast(chain, isChainableExpression);
+            const [left, isNotOptional] = replaceWorker(chainable.expression);
+            return [
+                createOptionalChainByChainableExpression(
+                    chainable,
+                    left,
+                    isNotOptional
+                ),
+                true
+            ];
+        }
     }
 
     function createOptionalChainByChainableExpression(
         expr: ChainableExpression,
-        left: Expression
+        left: Expression,
+        isNotOptional?: boolean
     ) {
+        const token = !isNotOptional
+            ? createToken(SyntaxKind.QuestionDotToken)
+            : undefined;
         switch (expr.kind) {
             case SyntaxKind.PropertyAccessExpression:
                 return createPropertyAccessChain(
                     left,
-                    createToken(SyntaxKind.QuestionDotToken),
+                    token,
                     cast(expr.name, isIdentifier)
                 );
             case SyntaxKind.ElementAccessExpression:
                 return createElementAccessChain(
                     left,
-                    createToken(SyntaxKind.QuestionDotToken),
+                    token,
                     expr.argumentExpression
                 );
             case SyntaxKind.CallExpression:
                 return createCallChain(
                     left,
-                    createToken(SyntaxKind.QuestionDotToken),
+                    token,
                     expr.typeArguments,
                     expr.arguments
                 );
@@ -313,8 +347,13 @@ export const visit = (
         );
     }
 
+    interface ChainsInfo {
+        first: Expression;
+        chains: ChainableExpression[];
+    }
+
     // a && a.b && a.b.c
-    function getOptionalChains(expr: BinaryExpression) {
+    function getOptionalChains(expr: BinaryExpression): ChainsInfo | undefined {
         const chains: ChainableExpression[] = [];
         let expression: Expression = expr;
         while (
@@ -334,7 +373,7 @@ export const visit = (
         let prefix: ChainableExpression = chains[0];
         for (let i = 1; i < chains.length; ++i) {
             const chain = chains[i];
-            if (!isEqualityExpression(prefix, chain.expression)) {
+            if (!getPrefixIfEquality(prefix, chain.expression)) {
                 return undefined;
             }
             if (
@@ -346,7 +385,41 @@ export const visit = (
             prefix = chain;
         }
 
-        return chains;
+        return {
+            first: expression,
+            chains
+        };
+    }
+
+    function getPrefixIfEquality(
+        expr1: Expression,
+        expr2: Expression
+    ): Expression[] | undefined {
+        const sa = assignIntoQueue(expr1);
+        const sb = assignIntoQueue(expr2);
+
+        let i = 0;
+        let l = Math.min(sa.length, sb.length);
+        while (i < l) {
+            const ea = sa[i];
+            const eb = sb[i];
+            if (!isEqualityExpression(ea, eb)) {
+                return undefined;
+            }
+            ++i;
+        }
+
+        return sa.slice(0, l);
+
+        function assignIntoQueue(expr: Expression) {
+            const result: Expression[] = [];
+            while (isChainableExpression(expr)) {
+                result.unshift(expr);
+                expr = expr.expression;
+            }
+            result.unshift(expr);
+            return result;
+        }
     }
 
     function getNullishCondBranch(

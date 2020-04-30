@@ -12,24 +12,7 @@ import {
 import { ProxyChangesTracker } from './changes';
 import { TypeScriptVersion } from './types';
 import { visit } from './visitor';
-
-class VLSHost extends VHost {
-    getCompilationSettings(): CompilerOptions {
-        return getDefaultCompilerOptions();
-    }
-    getScriptFileNames(): string[] {
-        return [];
-    }
-    getScriptVersion(): string {
-        return 'v3.8.3';
-    }
-    getScriptSnapshot(): IScriptSnapshot | undefined {
-        return undefined;
-    }
-    writeFile(filename: string, content: string) {
-        return super.writeFile(filename, content, false);
-    }
-}
+import { VLSHost } from './host';
 
 export function upgrade(code: string, target: TypeScriptVersion) {
     const filename = 'dummy.ts';
