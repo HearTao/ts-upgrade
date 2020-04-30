@@ -3,7 +3,9 @@ import {
     SourceFile,
     Node,
     startEndOverlapsWithStartEnd,
-    BaseChange
+    BaseChange,
+    NodeArray,
+    TypeParameterDeclaration
 } from 'typescript';
 import { lastOrUndefined } from './utils';
 
@@ -15,7 +17,22 @@ export class ProxyChangesTracker implements textChanges.ChangeTracker {
     private queue: Map<string, BaseChange[]> = new Map<string, BaseChange[]>();
     private _needAnotherPass: boolean = false;
 
-    constructor(private changeTracker: textChanges.ChangeTracker) {}
+    constructor(private changeTracker: textChanges.ChangeTracker) { }
+    
+    delete(
+        sourceFile: SourceFile,
+        node: Node | NodeArray<TypeParameterDeclaration>
+    ) {
+        this.changeTracker.delete(sourceFile, node);
+    }
+
+    insertNodeAfter(
+        sourceFile: SourceFile,
+        after: Node,
+        newNode: Node
+    ) {
+        this.changeTracker.insertNodeAfter(sourceFile, after, newNode);
+    }
 
     replaceNode(
         sourceFile: SourceFile,
