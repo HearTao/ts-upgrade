@@ -1,11 +1,9 @@
-import createVHost, { VHost } from 'ts-ez-host';
+import createVHost from 'ts-ez-host';
 import {
-    CompilerOptions,
     createProgram,
     formatting,
     getDefaultCompilerOptions,
     getDefaultFormatCodeSettings,
-    IScriptSnapshot,
     Program,
     textChanges
 } from 'typescript';
