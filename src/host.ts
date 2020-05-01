@@ -65,10 +65,12 @@ export class ParseConfigHostImpl implements ParseConfigHost {
         );
     }
 
+    /* istanbul ignore next */
     fileExists(path: string): boolean {
         return this.compilerHost.fileExists(path);
     }
 
+    /* istanbul ignore next */
     readFile(path: string): string | undefined {
         return this.compilerHost.readFile(path);
     }

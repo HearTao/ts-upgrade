@@ -1,27 +1,25 @@
+import { resolve } from 'path';
 import createVHost from 'ts-ez-host';
 import {
+    CompilerHost,
+    CompilerOptions,
+    createCompilerHost,
     createProgram,
+    findConfigFile,
     formatting,
     getDefaultCompilerOptions,
     getDefaultFormatCodeSettings,
-    Program,
-    textChanges,
     LanguageServiceHost,
-    createCompilerHost,
-    readJsonConfigFile,
     parseJsonSourceFileConfigFileContent,
-    CompilerHost,
-    CompilerOptions,
-    findConfigFile,
-    SymbolFlags
+    Program,
+    readJsonConfigFile,
+    textChanges
 } from 'typescript';
 import { ProxyChangesTracker } from './changes';
+import { mixinHost, ParseConfigHostImpl } from './host';
 import { TypeScriptVersion } from './types';
-import { visit } from './visitor';
-import { ParseConfigHostImpl, mixinHost } from './host';
-import { readFileSync } from 'fs';
-import { resolve } from 'path';
 import { assertDef } from './utils';
+import { visit } from './visitor';
 
 function upgradeWorker(
     target: TypeScriptVersion,
@@ -72,7 +70,8 @@ export function upgradeFromProject(
 ) {
     const defaultOptions = getDefaultCompilerOptions();
     const createCompilerHostImpl =
-        createHighLevelUpgradeHost ?? createCompilerHost;
+        createHighLevelUpgradeHost ??
+        /* istanbul ignore next */ createCompilerHost;
     const upgradeHost = createCompilerHostImpl(defaultOptions);
 
     const filename = assertDef(
@@ -81,8 +80,10 @@ export function upgradeFromProject(
     const config = readJsonConfigFile(filename, (file) =>
         upgradeHost.readFile(file)
     );
+
     const configParseHost = new ParseConfigHostImpl(
-        upgradeHost || createCompilerHost(defaultOptions)
+        upgradeHost ||
+            /* istanbul ignore next */ createCompilerHost(defaultOptions)
     );
     const configParsedResult = parseJsonSourceFileConfigFileContent(
         config,
@@ -108,7 +109,8 @@ export function upgradeFromFile(
 ) {
     const defaultOptions = getDefaultCompilerOptions();
     const createCompilerHostImpl =
-        createHighLevelUpgradeHost ?? createCompilerHost;
+        createHighLevelUpgradeHost ??
+        /* istanbul ignore next */ createCompilerHost;
     const upgradeHost = createCompilerHostImpl(defaultOptions);
     return upgradeFromCode(assertDef(upgradeHost.readFile(filename)), target);
 }
