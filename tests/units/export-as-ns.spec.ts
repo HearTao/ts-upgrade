@@ -28,6 +28,12 @@ describe('export * as ns ugrade', () => {
         prettierEqTo(upgrade(code, version), after);
     });
 
+    it('should work with extra local symbols', () => {
+        const code = `import * as A from './a.js';\nconst var1 = 1;\nfunction fn1() {}\nexport { A };`;
+        const after = `const var1 = 1;\n function fn1() {}\nexport * as A from './a.js';`;
+        prettierEqTo(upgrade(code, version), after);
+    });
+
     it('should work with multiple case', () => {
         const code = `import * as A from './a.js';\nimport * as B from './b.js';\nexport {A, B};`;
         const after = `export * as A from './a.js';\nexport * as B from './b.js';`;
