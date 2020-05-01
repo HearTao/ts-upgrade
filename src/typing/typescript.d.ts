@@ -180,6 +180,12 @@ declare module 'typescript' {
         newLineCharacter?: string
     ): FormatCodeSettings;
 
+    export function findConfigFile(
+        searchPath: string,
+        fileExists: (fileName: string) => boolean,
+        configName?: string
+    ): string | undefined;
+
     interface TypeChecker {
         isTypeAssignableTo(a: Type, b: Type): boolean;
     }
