@@ -50,28 +50,28 @@ declare module 'typescript' {
 
         export enum LeadingTriviaOption {
             /** Exclude all leading trivia (use getStart()) */
-            Exclude,
+            Exclude = 0,
             /** Include leading trivia and,
              * if there are no line breaks between the node and the previous token,
              * include all trivia between the node and the previous token
              */
-            IncludeAll,
+            IncludeAll = 1,
             /**
              * Include attached JSDoc comments
              */
-            JSDoc,
+            JSDoc = 2,
             /**
              * Only delete trivia on the same line as getStart().
              * Used to avoid deleting leading comments
              */
-            StartLine
+            StartLine = 3
         }
 
         export enum TrailingTriviaOption {
             /** Exclude all trailing trivia (use getEnd()) */
-            Exclude,
+            Exclude = 0,
             /** Include trailing trivia */
-            Include
+            Include = 1
         }
 
         export interface ConfigurableStartEnd
@@ -100,6 +100,80 @@ declare module 'typescript' {
                 options?: ChangeNodeOptions
             ): void;
         }
+    }
+
+    export namespace FindAllReferences {
+        export const enum FindReferencesUse {
+            /**
+             * When searching for references to a symbol, the location will not be adjusted (this is the default behavior when not specified).
+             */
+            Other = 0,
+            /**
+             * When searching for references to a symbol, the location will be adjusted if the cursor was on a keyword.
+             */
+            References = 1,
+            /**
+             * When searching for references to a symbol, the location will be adjusted if the cursor was on a keyword.
+             * Unlike `References`, the location will only be adjusted keyword belonged to a declaration with a valid name.
+             * If set, we will find fewer references -- if it is referenced by several different names, we still only find references for the original name.
+             */
+            Rename = 2
+        }
+
+        export interface Options {
+            readonly findInStrings?: boolean;
+            readonly findInComments?: boolean;
+            readonly use?: FindReferencesUse;
+            /** True if we are searching for implementations. We will have a different method of adding references if so. */
+            readonly implementations?: boolean;
+            /**
+             * True to opt in for enhanced renaming of shorthand properties and import/export specifiers.
+             * The options controls the behavior for the whole rename operation; it cannot be changed on a per-file basis.
+             * Default is false for backwards compatibility.
+             */
+            readonly providePrefixAndSuffixTextForRename?: boolean;
+        }
+
+        export const enum EntryKind {
+            Span = 0,
+            Node = 1,
+            StringLiteral = 2,
+            SearchedLocalFoundProperty = 3,
+            SearchedPropertyFoundLocal = 4
+        }
+
+        export type NodeEntryKind =
+            | EntryKind.Node
+            | EntryKind.StringLiteral
+            | EntryKind.SearchedLocalFoundProperty
+            | EntryKind.SearchedPropertyFoundLocal;
+        export type Entry = NodeEntry | SpanEntry;
+
+        export interface ContextWithStartAndEndNode {
+            start: Node;
+            end: Node;
+        }
+        export type ContextNode = Node | ContextWithStartAndEndNode;
+        export interface NodeEntry {
+            readonly kind: NodeEntryKind;
+            readonly node: Node;
+            readonly context?: ContextNode;
+        }
+        export interface SpanEntry {
+            readonly kind: EntryKind.Span;
+            readonly fileName: string;
+            readonly textSpan: TextSpan;
+        }
+
+        export function getReferenceEntriesForNode(
+            position: number,
+            node: Node,
+            program: Program,
+            sourceFiles: readonly SourceFile[],
+            cancellationToken: CancellationToken,
+            options?: Options,
+            sourceFilesSet?: ReadonlyMap<true>
+        ): readonly Entry[] | undefined;
     }
 
     export function getDefaultFormatCodeSettings(
