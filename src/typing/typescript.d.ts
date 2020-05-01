@@ -180,6 +180,11 @@ declare module 'typescript' {
         newLineCharacter?: string
     ): FormatCodeSettings;
 
+    export interface FileSystemEntries {
+        readonly files: readonly string[];
+        readonly directories: readonly string[];
+    }
+
     export function findConfigFile(
         searchPath: string,
         fileExists: (fileName: string) => boolean,
