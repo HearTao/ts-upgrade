@@ -1,4 +1,4 @@
-import { Program, Type } from 'typescript';
+import { Program, Type, SymbolTable } from 'typescript';
 
 declare module 'typescript' {
     export namespace formatting {
@@ -197,6 +197,7 @@ declare module 'typescript' {
 
     interface SourceFile {
         path: string;
+        locals: SymbolTable;
     }
 
     interface BaseChange {

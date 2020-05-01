@@ -44,8 +44,7 @@ import {
     createNodeArray,
     createNamedExports,
     createImportClause,
-    Statement,
-    NodeArray
+    SymbolFlags,
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
@@ -70,76 +69,81 @@ export const visit = (
                 return upgradeBinaryExpression(node as BinaryExpression);
             case SyntaxKind.AsExpression:
                 return upgradeAsExpression(node as AsExpression);
+            case SyntaxKind.ExportDeclaration:
+                return upgradeExportAsNsExpression(node as ExportDeclaration);
             default:
                 return forEachChild(node, visitor);
         }
     }
 
 
-    upgradeExportAsNsExpression(sourceFile.statements);
+    function upgradeExportAsNsExpression(expr: ExportDeclaration): Node | undefined {
+        if (target < TypeScriptVersion.V3_8) return forEachChild(expr, visitor);
+        const namedExports = getNamedExports(expr);
+        if (namedExports === undefined) return forEachChild(expr, visitor);
 
-    function upgradeExportAsNsExpression(statements: NodeArray<Statement>): void {
-        const namespaceImportTuples = statements.map(getNamespaceImport).filter(isDef);
-        const namedExportsTuples = statements.map(getNamedExports).filter(isDef);
-        for (const [exportNode, named] of namedExportsTuples) {
-            const exportSpecifiers = named.elements;
-            const newExports: ExportSpecifier[] = [];
-            for (const specifier of exportSpecifiers) {
-                const propertyName = specifier.propertyName ?? specifier.name;
-                const matchImportIndex = namespaceImportTuples
-                    .findIndex(pair => isEqualityExpression(pair[1].name, propertyName));
-                if (matchImportIndex === -1) {
-                    newExports.push(specifier);
-                    continue;
-                }
-                const importExpr = namespaceImportTuples[matchImportIndex][0];
-                const expression = createExportDeclaration(
-                    undefined,
-                    undefined,
-                    createNamespaceExport(specifier.name),
-                    importExpr.moduleSpecifier
-                );
-                changeTracker.insertNodeBefore(sourceFile, exportNode, expression);
-                removeNamespaceFromImport(namespaceImportTuples, matchImportIndex);
+        const exportSpecifiers = namedExports.elements;
+        const newExports: ExportSpecifier[] = [];
+        for (const specifier of exportSpecifiers) {
+            const propertyName = specifier.propertyName ?? specifier.name;
+            const importDec = findImportDeclaration(propertyName);
+            if (importDec === undefined) {
+                newExports.push(specifier);
+                continue;
             }
-            if (newExports.length) {
-                const specifiers = createNodeArray(newExports, exportSpecifiers.hasTrailingComma);
-                changeTracker.replaceNode(sourceFile, named, createNamedExports(specifiers));
-            } else {
-                changeTracker.delete(sourceFile, exportNode);
-            }
-        }
-    }
 
-
-    function removeNamespaceFromImport(namespaceImportTuples: [ImportDeclaration, NamespaceImport][], index: number) {
-        const [importExpr] = namespaceImportTuples[index];
-        const importClause = importExpr.importClause!;
-        if (importClause.name === undefined) {
-            changeTracker.delete(sourceFile, importExpr);
-            namespaceImportTuples.splice(index, 1);
-        } else {
-            changeTracker.replaceNode(sourceFile, importClause, createImportClause(
-                importClause.name!,
+            const expression = createExportDeclaration(
                 undefined,
-                importClause.isTypeOnly
-            ));
+                undefined,
+                createNamespaceExport(specifier.name),
+                importDec.moduleSpecifier
+            );
+            changeTracker.insertNodeBefore(sourceFile, expr, expression);
+            removeNamespaceFromImport(importDec);
         }
+
+        replaceNamedExports(newExports, namedExports);
+        return forEachChild(expr, visitor);
     }
 
-
-    function getNamespaceImport(node: Node): [ImportDeclaration, NamespaceImport] | undefined {
-        if (!isImportDeclaration(node)) return undefined;
-        const namespace = node.importClause?.namedBindings;
-        if (namespace === undefined || !isNamespaceImport(namespace)) return undefined;
-        return [node, namespace];
+    function findImportDeclaration(name: Node): ImportDeclaration | undefined {
+        const symbol = checker.getSymbolAtLocation(name);
+        if (symbol === undefined) return undefined;
+        const importSym = sourceFile.locals.get(symbol.escapedName);
+        if (importSym === undefined || !(importSym.flags & SymbolFlags.Alias)) return undefined;
+        if (importSym.declarations === undefined || importSym.declarations.length !== 1) return undefined;
+        const [node] = importSym.declarations;
+        return isNamespaceImport(node) ? node.parent.parent : undefined;
     }
 
-    function getNamedExports(node: Node): [ExportDeclaration, NamedExports] | undefined {
+    function replaceNamedExports(newExports: ExportSpecifier[], oldExports: NamedExports): void {
+        if (newExports.length === 0) {
+            changeTracker.delete(sourceFile, oldExports.parent);
+            return;
+        }
+        const specifiers = createNodeArray(newExports);
+        const newNamedExports = createNamedExports(specifiers);
+        changeTracker.replaceNode(sourceFile, oldExports, newNamedExports);
+    }
+
+    function removeNamespaceFromImport(importDec: ImportDeclaration): void {
+        const importClause = importDec.importClause!;
+        if (importClause.name === undefined) {
+            changeTracker.delete(sourceFile, importDec);
+            return;
+        }
+        changeTracker.replaceNode(sourceFile, importClause, createImportClause(
+            importClause.name!,
+            undefined,
+            importClause.isTypeOnly
+        ));
+    }
+
+    function getNamedExports(node: Node): NamedExports | undefined {
         if (!isExportDeclaration(node)) return undefined;
         const named = node.exportClause;
         if (named === undefined || !isNamedExports(named)) return undefined;
-        return [node, named];
+        return named;
     }
 
     function upgradeAsExpression(expr: AsExpression): Node | undefined {
