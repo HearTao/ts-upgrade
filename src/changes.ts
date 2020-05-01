@@ -26,12 +26,12 @@ export class ProxyChangesTracker implements textChanges.ChangeTracker {
         this.changeTracker.delete(sourceFile, node);
     }
 
-    insertNodeAfter(
+    insertNodeBefore(
         sourceFile: SourceFile,
-        after: Node,
+        before: Node,
         newNode: Node
     ) {
-        this.changeTracker.insertNodeAfter(sourceFile, after, newNode);
+        this.changeTracker.insertNodeBefore(sourceFile, before, newNode);
     }
 
     replaceNode(

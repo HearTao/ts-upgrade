@@ -105,9 +105,9 @@ declare module 'typescript' {
                 node: Node | NodeArray<TypeParameterDeclaration>
             ): void;
 
-            public insertNodeAfter(
+            public insertNodeBefore(
                 sourceFile: SourceFile,
-                after: Node,
+                before: Node,
                 newNode: Node
             ): void;
         }

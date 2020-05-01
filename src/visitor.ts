@@ -35,18 +35,17 @@ import {
     isNamespaceImport,
     NamespaceImport,
     isExportDeclaration,
-    isNamespaceExport,
-    NamespaceExport,
     ImportDeclaration,
     isNamedExports,
     NamedExports,
     ExportSpecifier,
-    Identifier,
     createExportDeclaration,
     createNamespaceExport,
     createNodeArray,
     createNamedExports,
-    createImportClause
+    createImportClause,
+    Statement,
+    NodeArray
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
@@ -77,39 +76,31 @@ export const visit = (
     }
 
 
-    upgradeExportAsNsExpression(getTopLevelNodes());
+    upgradeExportAsNsExpression(sourceFile.statements);
 
-    //FIXME: Need a better way to get the top nodes.
-    function getTopLevelNodes(): Node[] {
-        return sourceFile
-            .getChildren()
-            .find(node => node.kind === SyntaxKind.SyntaxList)
-            ?.getChildren() || [];
-    }
-
-    function upgradeExportAsNsExpression(children: Node[]): void {
-        const namespaceImportPairs = children.map(getNamespaceImport).filter(isDef);
-        const namedExportsPairs = children.map(getNamesExports).filter(isDef);
-        for (const [exportNode, named] of namedExportsPairs) {
+    function upgradeExportAsNsExpression(statements: NodeArray<Statement>): void {
+        const namespaceImportTuples = statements.map(getNamespaceImport).filter(isDef);
+        const namedExportsTuples = statements.map(getNamedExports).filter(isDef);
+        for (const [exportNode, named] of namedExportsTuples) {
             const exportSpecifiers = named.elements;
             const newExports: ExportSpecifier[] = [];
             for (const specifier of exportSpecifiers) {
                 const propertyName = specifier.propertyName ?? specifier.name;
-                const matchImportIndex = namespaceImportPairs
+                const matchImportIndex = namespaceImportTuples
                     .findIndex(pair => isEqualityExpression(pair[1].name, propertyName));
                 if (matchImportIndex === -1) {
                     newExports.push(specifier);
                     continue;
                 }
-                const importExpr = namespaceImportPairs[matchImportIndex][0];
+                const importExpr = namespaceImportTuples[matchImportIndex][0];
                 const expression = createExportDeclaration(
                     undefined,
                     undefined,
                     createNamespaceExport(specifier.name),
                     importExpr.moduleSpecifier
                 );
-                changeTracker.insertNodeAfter(sourceFile, exportNode, expression);
-                removeNamespaceFromImport(namespaceImportPairs, matchImportIndex);
+                changeTracker.insertNodeBefore(sourceFile, exportNode, expression);
+                removeNamespaceFromImport(namespaceImportTuples, matchImportIndex);
             }
             if (newExports.length) {
                 const specifiers = createNodeArray(newExports, exportSpecifiers.hasTrailingComma);
@@ -121,12 +112,12 @@ export const visit = (
     }
 
 
-    function removeNamespaceFromImport(namespaceImportPairs: [ImportDeclaration, NamespaceImport][], index: number) {
-        const [importExpr] = namespaceImportPairs[index];
+    function removeNamespaceFromImport(namespaceImportTuples: [ImportDeclaration, NamespaceImport][], index: number) {
+        const [importExpr] = namespaceImportTuples[index];
         const importClause = importExpr.importClause!;
         if (importClause.name === undefined) {
             changeTracker.delete(sourceFile, importExpr);
-            namespaceImportPairs.splice(index, 1);
+            namespaceImportTuples.splice(index, 1);
         } else {
             changeTracker.replaceNode(sourceFile, importClause, createImportClause(
                 importClause.name!,
@@ -144,7 +135,7 @@ export const visit = (
         return [node, namespace];
     }
 
-    function getNamesExports(node: Node): [ExportDeclaration, NamedExports] | undefined {
+    function getNamedExports(node: Node): [ExportDeclaration, NamedExports] | undefined {
         if (!isExportDeclaration(node)) return undefined;
         const named = node.exportClause;
         if (named === undefined || !isNamedExports(named)) return undefined;
