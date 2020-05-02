@@ -48,7 +48,7 @@ export function upgrade(code: string, target: TypeScriptVersion) {
                 const proxyChangeTracker = new ProxyChangesTracker(
                     changeTracker
                 );
-                visit(sourceFile, checker, proxyChangeTracker, target);
+                visit(sourceFile, checker, program, proxyChangeTracker, target);
                 needAnotherPass = proxyChangeTracker.needAnotherPass();
             }
         );
