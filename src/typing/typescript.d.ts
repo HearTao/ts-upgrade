@@ -105,7 +105,7 @@ declare module 'typescript' {
                 startNode: Node,
                 endNode: Node,
                 options?: ConfigurableStartEnd
-            ): void
+            ): void;
 
             public insertNodeBefore(
                 sourceFile: SourceFile,
@@ -188,7 +188,9 @@ declare module 'typescript' {
             sourceFilesSet?: ReadonlyMap<true>
         ): readonly Entry[] | undefined;
 
-        export function isContextWithStartAndEndNode(node: ContextNode): node is ContextWithStartAndEndNode;
+        export function isContextWithStartAndEndNode(
+            node: ContextNode
+        ): node is ContextWithStartAndEndNode;
     }
 
     export function getDefaultFormatCodeSettings(
