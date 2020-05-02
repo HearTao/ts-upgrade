@@ -281,9 +281,11 @@ export const visit = (
         let prefix: ChainableExpression = chains[0];
         for (let i = 1; i < chains.length; ++i) {
             const chain = chains[i];
+            /* istanbul ignore if */
             if (!getPrefixIfEquality(prefix, chain.expression)) {
                 return undefined;
             }
+            /* istanbul ignore if */
             if (
                 isPropertyAccessExpression(chain) &&
                 isPrivateIdentifier(chain.name)
@@ -311,6 +313,7 @@ export const visit = (
         while (i < l) {
             const ea = sa[i];
             const eb = sb[i];
+            /* istanbul ignore next */
             if (!isEqualityExpression(ea, eb)) {
                 return undefined;
             }
@@ -354,6 +357,7 @@ export const visit = (
                 case SyntaxKind.ExclamationEqualsEqualsToken:
                 case SyntaxKind.AmpersandAmpersandToken:
                     return cond.whenTrue;
+                /* istanbul ignore next */
                 default:
                     return undefined;
             }
@@ -529,6 +533,7 @@ export const visit = (
             expr.operatorToken.kind !== SyntaxKind.AmpersandAmpersandToken
         )
             return undefined;
+        /* istanbul ignore if */
         if (!isBinaryExpression(expr.left) || !isBinaryExpression(expr.right))
             return undefined;
         const left = isNullableEqualityExpression(expr.left);
