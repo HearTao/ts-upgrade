@@ -16,11 +16,6 @@ describe('nullish upgrade', () => {
         prettierEqTo(upgrade(code, version), after);
     });
 
-    var a =
-        window.name || window.status !== null
-            ? window.name || window.status
-            : 1;
-
     it('should work with logical expression', () => {
         const code = `(a || b) !== null ? (a || b) : 2`;
         const after = `(a || b) ?? 2`;

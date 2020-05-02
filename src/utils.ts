@@ -36,8 +36,16 @@ export function cast<T extends Node, U extends T>(
 export function lastOrUndefined<T>(
     list: readonly T[] | undefined
 ): T | undefined {
-    if (list && list.length) {
-        return list[list.length - 1];
+    if (!list || !list.length) {
+        return undefined;
     }
-    return undefined;
+    return list[list.length - 1];
+}
+
+export function last<T>(list: readonly T[] | undefined): T {
+    const result = lastOrUndefined(list);
+    if (!result) {
+        throw new Error('index out of range: last');
+    }
+    return result;
 }
