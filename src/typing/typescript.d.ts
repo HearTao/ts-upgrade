@@ -100,10 +100,12 @@ declare module 'typescript' {
                 options?: ChangeNodeOptions
             ): void;
 
-            delete(
+            public deleteNodeRange(
                 sourceFile: SourceFile,
-                node: Node | NodeArray<TypeParameterDeclaration>
-            ): void;
+                startNode: Node,
+                endNode: Node,
+                options?: ConfigurableStartEnd
+            ): void
 
             public insertNodeBefore(
                 sourceFile: SourceFile,
@@ -185,6 +187,8 @@ declare module 'typescript' {
             options?: Options,
             sourceFilesSet?: ReadonlyMap<true>
         ): readonly Entry[] | undefined;
+
+        export function isContextWithStartAndEndNode(node: ContextNode): node is ContextWithStartAndEndNode;
     }
 
     export function getDefaultFormatCodeSettings(

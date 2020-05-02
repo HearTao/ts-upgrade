@@ -33,7 +33,6 @@ import {
     TypeFormatFlags,
     isImportDeclaration,
     isNamespaceImport,
-    NamespaceImport,
     isExportDeclaration,
     ImportDeclaration,
     isNamedExports,
@@ -45,6 +44,9 @@ import {
     createNamedExports,
     createImportClause,
     SymbolFlags,
+    Identifier,
+    FindAllReferences,
+    Program,
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
@@ -54,11 +56,11 @@ import { cast, skipParens, lastOrUndefined, assertDef, isDef } from './utils';
 export const visit = (
     sourceFile: SourceFile,
     checker: TypeChecker,
+    program: Program,
     changeTracker: textChanges.ChangeTracker,
     target: TypeScriptVersion
 ): void => {
     visitor(sourceFile);
-
     function visitor(node: Node): Node | undefined {
         switch (node.kind) {
             case SyntaxKind.ConditionalExpression:
@@ -87,7 +89,7 @@ export const visit = (
         for (const specifier of exportSpecifiers) {
             const propertyName = specifier.propertyName ?? specifier.name;
             const importDec = findImportDeclaration(propertyName);
-            if (importDec === undefined) {
+            if (importDec === undefined || !isOnlyImportOrExportDecRef(propertyName)) {
                 newExports.push(specifier);
                 continue;
             }
@@ -101,7 +103,6 @@ export const visit = (
             changeTracker.insertNodeBefore(sourceFile, expr, expression);
             removeNamespaceFromImport(importDec);
         }
-
         replaceNamedExports(newExports, namedExports);
         return forEachChild(expr, visitor);
     }
@@ -118,7 +119,7 @@ export const visit = (
 
     function replaceNamedExports(newExports: ExportSpecifier[], oldExports: NamedExports): void {
         if (newExports.length === 0) {
-            changeTracker.delete(sourceFile, oldExports.parent);
+            changeTracker.deleteNodeRange(sourceFile, oldExports.parent, oldExports.parent);
             return;
         }
         const specifiers = createNodeArray(newExports);
@@ -129,7 +130,7 @@ export const visit = (
     function removeNamespaceFromImport(importDec: ImportDeclaration): void {
         const importClause = importDec.importClause!;
         if (importClause.name === undefined) {
-            changeTracker.delete(sourceFile, importDec);
+            changeTracker.deleteNodeRange(sourceFile, importDec, importDec);
             return;
         }
         changeTracker.replaceNode(sourceFile, importClause, createImportClause(
@@ -144,6 +145,22 @@ export const visit = (
         const named = node.exportClause;
         if (named === undefined || !isNamedExports(named)) return undefined;
         return named;
+    }
+
+    function isOnlyImportOrExportDecRef(identifier: Identifier): boolean {
+        const entries = FindAllReferences.getReferenceEntriesForNode(
+            -1,
+            identifier,
+            program,
+            [sourceFile],
+            { throwIfCancellationRequested: () => { }, isCancellationRequested: () => false }
+        );
+        if (entries === undefined || entries.length === 0) return false;
+        return entries.every(entry => {
+            if (entry.kind !== FindAllReferences.EntryKind.Node) return false;
+            if (entry.context === undefined || FindAllReferences.isContextWithStartAndEndNode(entry.context)) return false;
+            return isImportDeclaration(entry.context) || isExportDeclaration(entry.context);
+        });
     }
 
     function upgradeAsExpression(expr: AsExpression): Node | undefined {
