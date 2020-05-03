@@ -15,5 +15,7 @@ module.exports = {
 
     trailingComma: 'none',
 
-    proseWrap: 'always'
+    proseWrap: 'always',
+
+    arrowParens: 'avoid'
 };
