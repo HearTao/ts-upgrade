@@ -53,8 +53,14 @@ describe('export * as ns ugrade', () => {
     });
 
     it('should not work with used symbol', () => {
-        const code = `import * as A from './a.js';\nimport * as B from './b.js';\nimport * as C from './c.js';\nconst b = B; console.log(A);\nexport { A, B, C as D};`;
-        const after = `import * as A from './a.js';\nimport * as B from './b.js';\nconst b = B;\nconsole.log(A);\nexport * as D from './c.js';\nexport { A, B };`;
+        const code = `import * as A from './a.js';\nimport * as C from './c.js';\nconst B = 1;\nconsole.log(A);\nexport { A, B, C as D};`;
+        const after = `import * as A from './a.js';\nconst B = 1;\nconsole.log(A);\nexport * as D from './c.js';\nexport { A, B };`;
         prettierEqTo(upgrade(code, version), after);
     });
+    it('should not work with other import', () => {
+        const code = `import * as A from './a.js';\nimport B from './b.js';\nexport {A, B};`;
+        const after = `import B from './b.js';\nexport * as A from './a.js';\nexport { B };`;
+        prettierEqTo(upgrade(code, version), after);
+    });
+
 });

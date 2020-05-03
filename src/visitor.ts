@@ -148,11 +148,9 @@ export const visit = (
         );
     }
 
-    function getNamedExports(node: Node): NamedExports | undefined {
-        if (!isExportDeclaration(node)) return undefined;
-        const named = node.exportClause;
-        if (named === undefined || !isNamedExports(named)) return undefined;
-        return named;
+    function getNamedExports(expr: ExportDeclaration): NamedExports | undefined {
+        const clause = expr.exportClause;
+        return clause && isNamedExports(clause) ? clause : undefined;
     }
 
     function findImportDeclaration(identifier: Identifier) {
@@ -162,13 +160,14 @@ export const visit = (
             program,
             [sourceFile],
             {
-                throwIfCancellationRequested: () => {},
-                isCancellationRequested: () => false
+                throwIfCancellationRequested: () => { },
+                isCancellationRequested:/* istanbul ignore next */ () => false
             }
         );
         if (entries === undefined || entries.length === 0) return undefined;
         let importDec: undefined | ImportDeclaration = undefined;
         for (const entry of entries) {
+            /* istanbul ignore if */
             if (entry.kind !== FindAllReferences.EntryKind.Node)
                 return undefined;
             const { context, node } = entry;
@@ -178,7 +177,6 @@ export const visit = (
             )
                 return undefined;
             if (isImportDeclaration(context)) {
-                if (importDec !== undefined) return undefined;
                 if (!node.parent || !isNamespaceImport(node.parent))
                     return undefined;
                 importDec = context;
@@ -304,7 +302,9 @@ export const visit = (
         let lastChain = firstChain;
         for (let i = 0; i < chains.length; ++i) {
             const chain = chains[i];
-            prefix = assertDef(replacePrefix(lastChain, chain, prefix));
+            const nextPrefix = replacePrefix(lastChain, chain, prefix);
+            if (nextPrefix === undefined) return;
+            prefix = nextPrefix;
             lastChain = chain;
         }
         changeTracker.replaceNode(sourceFile, expr, prefix);

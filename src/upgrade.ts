@@ -26,6 +26,7 @@ function upgradeWorker(
     target: TypeScriptVersion,
     host: LanguageServiceHost,
     createProgramCallback: (oldProgram?: Program) => Program,
+    /* istanbul ignore next */
     options: Options = {}
 ) {
     const formatCodeSettings = getDefaultFormatCodeSettings();
@@ -73,6 +74,7 @@ function upgradeWorker(
 export function upgradeFromProject(
     projectPath: string,
     target: TypeScriptVersion,
+    /* istanbul ignore next */
     options: Options = {},
     createHighLevelUpgradeHost?: (options: CompilerOptions) => CompilerHost
 ) {
@@ -98,6 +100,7 @@ export function upgradeFromProject(
         configParseHost,
         projectPath
     );
+    /* istanbul ignore if */
     if (configParsedResult.errors.length > 0) {
         throw new Error(
             formatDiagnosticsWithColorAndContext(configParsedResult.errors, {
@@ -127,6 +130,7 @@ export function upgradeFromProject(
 export function upgradeFromFile(
     filename: string,
     target: TypeScriptVersion,
+    /* istanbul ignore next */
     options: Options = {},
     createHighLevelUpgradeHost?: (options: CompilerOptions) => CompilerHost
 ) {
@@ -145,6 +149,7 @@ export function upgradeFromFile(
 export function upgradeFromCode(
     code: string,
     target: TypeScriptVersion,
+    /* istanbul ignore next */
     options: Options = {}
 ) {
     const filename = 'dummy.ts';

@@ -45,4 +45,9 @@ describe('optional chains upgrade', () => {
         const after = `a(foo?.bar)?.b?.c`;
         prettierEqTo(upgrade(code, version), after);
     });
+
+    it('should not work with wrong chain', () => {
+        const code = `a && b.c && a.b.c`;
+        prettierEqTo(upgrade(code, version), code);
+    });
 });

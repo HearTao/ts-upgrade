@@ -21,6 +21,7 @@ export class ProxyChangesTracker implements textChanges.ChangeTracker {
 
     checkOverlap() {
         const lastChange = this.getLastChanges();
+        /* istanbul ignore next */
         if (lastChange) {
             const changes = this.queue.get(lastChange.sourceFile.path) || [];
             if (

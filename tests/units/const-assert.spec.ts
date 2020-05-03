@@ -75,4 +75,9 @@ describe('const assert', () => {
         const after = `call([1, 2, 3] as const, [4, 5] as const)`;
         prettierEqTo(upgrade(code, version), after);
     });
+
+    it('should not work with variable', () => {
+        const code = `a as true`;
+        prettierEqTo(upgrade(code, version), code);
+    });
 });
