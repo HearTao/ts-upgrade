@@ -43,7 +43,6 @@ import {
     createNodeArray,
     createNamedExports,
     createImportClause,
-    SymbolFlags,
     Identifier,
     FindAllReferences,
     Program,
@@ -55,12 +54,14 @@ import { cast, skipParens, lastOrUndefined, assertDef, isDef } from './utils';
 
 export const visit = (
     sourceFile: SourceFile,
-    checker: TypeChecker,
     program: Program,
     changeTracker: textChanges.ChangeTracker,
     target: TypeScriptVersion
 ): void => {
+    const checker = program.getTypeChecker();
+    
     visitor(sourceFile);
+    
     function visitor(node: Node): Node | undefined {
         switch (node.kind) {
             case SyntaxKind.ConditionalExpression:
@@ -89,7 +90,7 @@ export const visit = (
         for (const specifier of exportSpecifiers) {
             const propertyName = specifier.propertyName ?? specifier.name;
             const importDec = findImportDeclaration(propertyName);
-            if (importDec === undefined || !isOnlyImportOrExportDecRef(propertyName)) {
+            if (importDec === undefined) {
                 newExports.push(specifier);
                 continue;
             }
@@ -105,16 +106,6 @@ export const visit = (
         }
         replaceNamedExports(newExports, namedExports);
         return forEachChild(expr, visitor);
-    }
-
-    function findImportDeclaration(name: Node): ImportDeclaration | undefined {
-        const symbol = checker.getSymbolAtLocation(name);
-        if (symbol === undefined) return undefined;
-        const importSym = sourceFile.locals.get(symbol.escapedName);
-        if (importSym === undefined || !(importSym.flags & SymbolFlags.Alias)) return undefined;
-        if (importSym.declarations === undefined || importSym.declarations.length !== 1) return undefined;
-        const [node] = importSym.declarations;
-        return isNamespaceImport(node) ? node.parent.parent : undefined;
     }
 
     function replaceNamedExports(newExports: ExportSpecifier[], oldExports: NamedExports): void {
@@ -147,20 +138,29 @@ export const visit = (
         return named;
     }
 
-    function isOnlyImportOrExportDecRef(identifier: Identifier): boolean {
+    function findImportDeclaration(identifier: Identifier) {
         const entries = FindAllReferences.getReferenceEntriesForNode(
-            -1,
+            identifier.pos,
             identifier,
             program,
             [sourceFile],
             { throwIfCancellationRequested: () => { }, isCancellationRequested: () => false }
         );
-        if (entries === undefined || entries.length === 0) return false;
-        return entries.every(entry => {
-            if (entry.kind !== FindAllReferences.EntryKind.Node) return false;
-            if (entry.context === undefined || FindAllReferences.isContextWithStartAndEndNode(entry.context)) return false;
-            return isImportDeclaration(entry.context) || isExportDeclaration(entry.context);
-        });
+        if (entries === undefined || entries.length === 0) return undefined;
+        let importDec: undefined | ImportDeclaration = undefined;
+        for (const entry of entries) {
+            if (entry.kind !== FindAllReferences.EntryKind.Node) return undefined;
+            const { context, node } = entry;
+            if (context === undefined || FindAllReferences.isContextWithStartAndEndNode(context)) return undefined;
+            if (isImportDeclaration(context)) {
+                if (importDec !== undefined) return undefined;
+                if (!node.parent || !isNamespaceImport(node.parent)) return undefined;
+                importDec = context;
+                continue;
+            }
+            if (!isExportDeclaration(context)) return undefined;
+        }
+        return importDec;
     }
 
     function upgradeAsExpression(expr: AsExpression): Node | undefined {
