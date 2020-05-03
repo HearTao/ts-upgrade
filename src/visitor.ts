@@ -140,7 +140,7 @@ export const visit = (
 
     function findImportDeclaration(identifier: Identifier) {
         const entries = FindAllReferences.getReferenceEntriesForNode(
-            identifier.pos,
+            -1,
             identifier,
             program,
             [sourceFile],
