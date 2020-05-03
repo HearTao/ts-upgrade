@@ -112,14 +112,19 @@ export function upgradeFromProject(
     }
     const host = createCompilerHostImpl(configParsedResult.options);
     const lsHost = mixinHost(host);
-    upgradeWorker(target, lsHost, oldProgram => {
-        return createProgram(
-            configParsedResult.fileNames,
-            configParsedResult.options,
-            host,
-            oldProgram
-        );
-    });
+    upgradeWorker(
+        target,
+        lsHost,
+        oldProgram => {
+            return createProgram(
+                configParsedResult.fileNames,
+                configParsedResult.options,
+                host,
+                oldProgram
+            );
+        },
+        options
+    );
 }
 
 export function upgradeFromFile(
@@ -154,8 +159,12 @@ export function upgradeFromCode(
 
     vlsHost.writeFile(filename, code);
 
-    upgradeWorker(target, vlsHost, oldProgram =>
-        createProgram([filename], options, vlsHost, oldProgram)
+    upgradeWorker(
+        target,
+        vlsHost,
+        oldProgram =>
+            createProgram([filename], compilerOptions, vlsHost, oldProgram),
+        options
     );
 
     const filePath = resolve(vlsHost.getCurrentDirectory(), filename);
