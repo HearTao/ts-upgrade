@@ -1,4 +1,4 @@
-import { Program, Type } from 'typescript';
+import { Program, Type, SymbolTable } from 'typescript';
 
 declare module 'typescript' {
     export namespace formatting {
@@ -99,6 +99,19 @@ declare module 'typescript' {
                 newNode: Node,
                 options?: ChangeNodeOptions
             ): void;
+
+            public deleteNodeRange(
+                sourceFile: SourceFile,
+                startNode: Node,
+                endNode: Node,
+                options?: ConfigurableStartEnd
+            ): void;
+
+            public insertNodeBefore(
+                sourceFile: SourceFile,
+                before: Node,
+                newNode: Node
+            ): void;
         }
     }
 
@@ -174,6 +187,10 @@ declare module 'typescript' {
             options?: Options,
             sourceFilesSet?: ReadonlyMap<true>
         ): readonly Entry[] | undefined;
+
+        export function isContextWithStartAndEndNode(
+            node: ContextNode
+        ): node is ContextWithStartAndEndNode;
     }
 
     export function getDefaultFormatCodeSettings(
@@ -197,6 +214,7 @@ declare module 'typescript' {
 
     interface SourceFile {
         path: string;
+        locals: SymbolTable;
     }
 
     interface BaseChange {

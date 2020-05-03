@@ -35,7 +35,6 @@ function upgradeWorker(
     while (needAnotherPass) {
         needAnotherPass = false;
         const program = (lastProgram = createProgramCallback(lastProgram));
-        const checker = program.getTypeChecker();
 
         program.getSourceFiles().forEach((sourceFile) => {
             let text = sourceFile.getText();
@@ -49,7 +48,7 @@ function upgradeWorker(
                     const proxyChangeTracker = new ProxyChangesTracker(
                         changeTracker
                     );
-                    visit(sourceFile, checker, proxyChangeTracker, target);
+                    visit(sourceFile, program, proxyChangeTracker, target);
                     needAnotherPass =
                         needAnotherPass || proxyChangeTracker.needAnotherPass();
                 }
