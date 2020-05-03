@@ -18,14 +18,15 @@ import {
 } from 'typescript';
 import { ProxyChangesTracker } from './changes';
 import { mixinHost, ParseConfigHostImpl } from './host';
-import { TypeScriptVersion } from './types';
+import { TypeScriptVersion, Options } from './types';
 import { assertDef } from './utils';
 import { visit } from './visitor';
 
 function upgradeWorker(
     target: TypeScriptVersion,
     host: LanguageServiceHost,
-    createProgramCallback: (oldProgram?: Program) => Program
+    createProgramCallback: (oldProgram?: Program) => Program,
+    options: Options = {}
 ) {
     const formatCodeSettings = getDefaultFormatCodeSettings();
     const formatContext = formatting.getFormatContext(formatCodeSettings);
@@ -48,7 +49,13 @@ function upgradeWorker(
                     const proxyChangeTracker = new ProxyChangesTracker(
                         changeTracker
                     );
-                    visit(sourceFile, program, proxyChangeTracker, target);
+                    visit(
+                        sourceFile,
+                        program,
+                        proxyChangeTracker,
+                        target,
+                        options
+                    );
                     needAnotherPass =
                         needAnotherPass || proxyChangeTracker.needAnotherPass();
                 }
@@ -66,6 +73,7 @@ function upgradeWorker(
 export function upgradeFromProject(
     projectPath: string,
     target: TypeScriptVersion,
+    options: Options = {},
     createHighLevelUpgradeHost?: (options: CompilerOptions) => CompilerHost
 ) {
     const defaultOptions = getDefaultCompilerOptions();
@@ -91,27 +99,35 @@ export function upgradeFromProject(
         projectPath
     );
     if (configParsedResult.errors.length > 0) {
-        throw new Error(formatDiagnosticsWithColorAndContext(configParsedResult.errors, {
-            getCurrentDirectory: upgradeHost.getCurrentDirectory,
-            getNewLine: upgradeHost.getNewLine,
-            getCanonicalFileName: name => name
-        }));
+        throw new Error(
+            formatDiagnosticsWithColorAndContext(configParsedResult.errors, {
+                getCurrentDirectory: upgradeHost.getCurrentDirectory,
+                getNewLine: upgradeHost.getNewLine,
+                getCanonicalFileName: (name) => name
+            })
+        );
     }
     const host = createCompilerHostImpl(configParsedResult.options);
     const lsHost = mixinHost(host);
-    upgradeWorker(target, lsHost, (oldProgram) => {
-        return createProgram(
-            configParsedResult.fileNames,
-            configParsedResult.options,
-            host,
-            oldProgram
-        );
-    });
+    upgradeWorker(
+        target,
+        lsHost,
+        (oldProgram) => {
+            return createProgram(
+                configParsedResult.fileNames,
+                configParsedResult.options,
+                host,
+                oldProgram
+            );
+        },
+        options
+    );
 }
 
 export function upgradeFromFile(
     filename: string,
     target: TypeScriptVersion,
+    options: Options = {},
     createHighLevelUpgradeHost?: (options: CompilerOptions) => CompilerHost
 ) {
     const defaultOptions = getDefaultCompilerOptions();
@@ -119,25 +135,41 @@ export function upgradeFromFile(
         createHighLevelUpgradeHost ??
         /* istanbul ignore next */ createCompilerHost;
     const upgradeHost = createCompilerHostImpl(defaultOptions);
-    return upgradeFromCode(assertDef(upgradeHost.readFile(filename)), target);
+    return upgradeFromCode(
+        assertDef(upgradeHost.readFile(filename)),
+        target,
+        options
+    );
 }
 
-export function upgradeFromCode(code: string, target: TypeScriptVersion) {
+export function upgradeFromCode(
+    code: string,
+    target: TypeScriptVersion,
+    options: Options = {}
+) {
     const filename = 'dummy.ts';
-    const options = getDefaultCompilerOptions();
+    const compilerOptions = getDefaultCompilerOptions();
     const vhost = createVHost();
     const vlsHost = mixinHost(vhost);
 
     vlsHost.writeFile(filename, code);
 
-    upgradeWorker(target, vlsHost, (oldProgram) =>
-        createProgram([filename], options, vlsHost, oldProgram)
+    upgradeWorker(
+        target,
+        vlsHost,
+        (oldProgram) =>
+            createProgram([filename], compilerOptions, vlsHost, oldProgram),
+        options
     );
 
     const filePath = resolve(vlsHost.getCurrentDirectory(), filename);
     return vlsHost.readFile(filePath)!;
 }
 
-export function upgrade(code: string, target: TypeScriptVersion) {
-    return upgradeFromCode(code, target);
+export function upgrade(
+    code: string,
+    target: TypeScriptVersion,
+    options: Options = {}
+) {
+    return upgradeFromCode(code, target, options);
 }

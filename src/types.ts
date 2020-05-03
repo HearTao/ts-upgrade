@@ -18,5 +18,23 @@ export enum TypeScriptVersion {
     v3_5,
     v3_6,
     v3_7,
-    V3_8
+    v3_8,
+    v3_9,
+    Latest
+}
+
+export enum FeatureRules {
+    NullishCoalesce,
+    OptionalChains,
+    ConstAssertion,
+    ExportAsNamespace
+}
+
+export enum FeatureAction {
+    Enabled,
+    Disabled
+}
+
+export interface Options {
+    rules?: Partial<Record<FeatureRules, FeatureAction>>;
 }

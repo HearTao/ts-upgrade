@@ -2,7 +2,7 @@ import { TypeScriptVersion, upgrade } from '../../src';
 import { prettierEqTo } from '../utils';
 
 describe('export * as ns ugrade', () => {
-    const version = TypeScriptVersion.V3_8;
+    const version = TypeScriptVersion.v3_8;
 
     it('should work with simple case', () => {
         const code = `import * as A from "./a.js";\nexport { A };`;
