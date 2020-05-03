@@ -25,7 +25,7 @@ export class ProxyChangesTracker implements textChanges.ChangeTracker {
         if (lastChange) {
             const changes = this.queue.get(lastChange.sourceFile.path) || [];
             if (
-                changes.some((c) =>
+                changes.some(c =>
                     startEndOverlapsWithStartEnd(
                         c.range.pos,
                         c.range.end,
