@@ -13,7 +13,8 @@ import {
     parseJsonSourceFileConfigFileContent,
     Program,
     readJsonConfigFile,
-    textChanges
+    textChanges,
+    formatDiagnosticsWithColorAndContext
 } from 'typescript';
 import { ProxyChangesTracker } from './changes';
 import { mixinHost, ParseConfigHostImpl } from './host';
@@ -90,6 +91,13 @@ export function upgradeFromProject(
         configParseHost,
         projectPath
     );
+    if (configParsedResult.errors.length > 0) {
+        throw new Error(formatDiagnosticsWithColorAndContext(configParsedResult.errors, {
+            getCurrentDirectory: upgradeHost.getCurrentDirectory,
+            getNewLine: upgradeHost.getNewLine,
+            getCanonicalFileName: name => name
+        }));
+    }
     const host = createCompilerHostImpl(configParsedResult.options);
     const lsHost = mixinHost(host);
     upgradeWorker(target, lsHost, (oldProgram) => {
