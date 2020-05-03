@@ -62,5 +62,4 @@ describe('export * as ns ugrade', () => {
         const after = `import B from './b.js';\nexport * as A from './a.js';\nexport { B };`;
         prettierEqTo(upgrade(code, version), after);
     });
-
 });

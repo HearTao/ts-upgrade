@@ -111,8 +111,7 @@ describe('nullish upgrade', () => {
     });
 
     it('should not work with wrong and condition', () => {
-        const code = `a !== null && b !== undefined ? a : 1`; 
+        const code = `a !== null && b !== undefined ? a : 1`;
         prettierEqTo(upgrade(code, version), code);
-    })
- 
+    });
 });
