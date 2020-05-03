@@ -17,14 +17,14 @@ export class ProxyChangesTracker implements textChanges.ChangeTracker {
     private queue: Map<string, BaseChange[]> = new Map<string, BaseChange[]>();
     private _needAnotherPass: boolean = false;
 
-    constructor(private changeTracker: textChanges.ChangeTracker) { }
+    constructor(private changeTracker: textChanges.ChangeTracker) {}
 
     checkOverlap() {
         const lastChange = this.getLastChanges();
         if (lastChange) {
             const changes = this.queue.get(lastChange.sourceFile.path) || [];
             if (
-                changes.some((c) =>
+                changes.some(c =>
                     startEndOverlapsWithStartEnd(
                         c.range.pos,
                         c.range.end,
@@ -48,15 +48,16 @@ export class ProxyChangesTracker implements textChanges.ChangeTracker {
         endNode: Node,
         options?: textChanges.ConfigurableStartEnd
     ) {
-        this.changeTracker.deleteNodeRange(sourceFile, startNode, endNode, options);
+        this.changeTracker.deleteNodeRange(
+            sourceFile,
+            startNode,
+            endNode,
+            options
+        );
         this.checkOverlap();
     }
 
-    insertNodeBefore(
-        sourceFile: SourceFile,
-        before: Node,
-        newNode: Node
-    ) {
+    insertNodeBefore(sourceFile: SourceFile, before: Node, newNode: Node) {
         this.changeTracker.insertNodeBefore(sourceFile, before, newNode);
         this.checkOverlap();
     }

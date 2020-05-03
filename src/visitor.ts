@@ -44,7 +44,7 @@ import {
     createImportClause,
     Identifier,
     FindAllReferences,
-    Program,
+    Program
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
@@ -58,9 +58,9 @@ export const visit = (
     target: TypeScriptVersion
 ): void => {
     const checker = program.getTypeChecker();
-    
+
     visitor(sourceFile);
-    
+
     function visitor(node: Node): Node | undefined {
         switch (node.kind) {
             case SyntaxKind.ConditionalExpression:
@@ -78,8 +78,9 @@ export const visit = (
         }
     }
 
-
-    function upgradeExportAsNsExpression(expr: ExportDeclaration): Node | undefined {
+    function upgradeExportAsNsExpression(
+        expr: ExportDeclaration
+    ): Node | undefined {
         if (target < TypeScriptVersion.V3_8) return forEachChild(expr, visitor);
         const namedExports = getNamedExports(expr);
         if (namedExports === undefined) return forEachChild(expr, visitor);
@@ -107,9 +108,16 @@ export const visit = (
         return forEachChild(expr, visitor);
     }
 
-    function replaceNamedExports(newExports: ExportSpecifier[], oldExports: NamedExports): void {
+    function replaceNamedExports(
+        newExports: ExportSpecifier[],
+        oldExports: NamedExports
+    ): void {
         if (newExports.length === 0) {
-            changeTracker.deleteNodeRange(sourceFile, oldExports.parent, oldExports.parent);
+            changeTracker.deleteNodeRange(
+                sourceFile,
+                oldExports.parent,
+                oldExports.parent
+            );
             return;
         }
         const specifiers = createNodeArray(newExports);
@@ -123,11 +131,15 @@ export const visit = (
             changeTracker.deleteNodeRange(sourceFile, importDec, importDec);
             return;
         }
-        changeTracker.replaceNode(sourceFile, importClause, createImportClause(
-            importClause.name!,
-            undefined,
-            importClause.isTypeOnly
-        ));
+        changeTracker.replaceNode(
+            sourceFile,
+            importClause,
+            createImportClause(
+                importClause.name!,
+                undefined,
+                importClause.isTypeOnly
+            )
+        );
     }
 
     function getNamedExports(node: Node): NamedExports | undefined {
@@ -143,17 +155,26 @@ export const visit = (
             identifier,
             program,
             [sourceFile],
-            { throwIfCancellationRequested: () => { }, isCancellationRequested: () => false }
+            {
+                throwIfCancellationRequested: () => {},
+                isCancellationRequested: () => false
+            }
         );
         if (entries === undefined || entries.length === 0) return undefined;
         let importDec: undefined | ImportDeclaration = undefined;
         for (const entry of entries) {
-            if (entry.kind !== FindAllReferences.EntryKind.Node) return undefined;
+            if (entry.kind !== FindAllReferences.EntryKind.Node)
+                return undefined;
             const { context, node } = entry;
-            if (context === undefined || FindAllReferences.isContextWithStartAndEndNode(context)) return undefined;
+            if (
+                context === undefined ||
+                FindAllReferences.isContextWithStartAndEndNode(context)
+            )
+                return undefined;
             if (isImportDeclaration(context)) {
                 if (importDec !== undefined) return undefined;
-                if (!node.parent || !isNamespaceImport(node.parent)) return undefined;
+                if (!node.parent || !isNamespaceImport(node.parent))
+                    return undefined;
                 importDec = context;
                 continue;
             }

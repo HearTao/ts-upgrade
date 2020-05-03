@@ -36,7 +36,7 @@ function upgradeWorker(
         needAnotherPass = false;
         const program = (lastProgram = createProgramCallback(lastProgram));
 
-        program.getSourceFiles().forEach((sourceFile) => {
+        program.getSourceFiles().forEach(sourceFile => {
             let text = sourceFile.getText();
             const changes = textChanges.ChangeTracker.with(
                 {
@@ -44,7 +44,7 @@ function upgradeWorker(
                     host,
                     preferences: {}
                 },
-                (changeTracker) => {
+                changeTracker => {
                     const proxyChangeTracker = new ProxyChangesTracker(
                         changeTracker
                     );
@@ -54,7 +54,7 @@ function upgradeWorker(
                 }
             );
 
-            changes.forEach((change) => {
+            changes.forEach(change => {
                 text = textChanges.applyChanges(text, change.textChanges);
             });
 
@@ -75,9 +75,9 @@ export function upgradeFromProject(
     const upgradeHost = createCompilerHostImpl(defaultOptions);
 
     const filename = assertDef(
-        findConfigFile(projectPath, (file) => upgradeHost.fileExists(file))
+        findConfigFile(projectPath, file => upgradeHost.fileExists(file))
     );
-    const config = readJsonConfigFile(filename, (file) =>
+    const config = readJsonConfigFile(filename, file =>
         upgradeHost.readFile(file)
     );
 
@@ -91,15 +91,17 @@ export function upgradeFromProject(
         projectPath
     );
     if (configParsedResult.errors.length > 0) {
-        throw new Error(formatDiagnosticsWithColorAndContext(configParsedResult.errors, {
-            getCurrentDirectory: upgradeHost.getCurrentDirectory,
-            getNewLine: upgradeHost.getNewLine,
-            getCanonicalFileName: name => name
-        }));
+        throw new Error(
+            formatDiagnosticsWithColorAndContext(configParsedResult.errors, {
+                getCurrentDirectory: upgradeHost.getCurrentDirectory,
+                getNewLine: upgradeHost.getNewLine,
+                getCanonicalFileName: name => name
+            })
+        );
     }
     const host = createCompilerHostImpl(configParsedResult.options);
     const lsHost = mixinHost(host);
-    upgradeWorker(target, lsHost, (oldProgram) => {
+    upgradeWorker(target, lsHost, oldProgram => {
         return createProgram(
             configParsedResult.fileNames,
             configParsedResult.options,
@@ -130,7 +132,7 @@ export function upgradeFromCode(code: string, target: TypeScriptVersion) {
 
     vlsHost.writeFile(filename, code);
 
-    upgradeWorker(target, vlsHost, (oldProgram) =>
+    upgradeWorker(target, vlsHost, oldProgram =>
         createProgram([filename], options, vlsHost, oldProgram)
     );
 

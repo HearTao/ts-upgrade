@@ -20,7 +20,7 @@ describe('Work with TypeScript Project', () => {
 
     beforeEach(() => {
         data = {};
-        filenames.forEach((filename) => {
+        filenames.forEach(filename => {
             data[filename] = fs.readFileSync(filename).toString();
         });
 
@@ -31,8 +31,8 @@ describe('Work with TypeScript Project', () => {
         upgradeFromProject(projectPath, target, () => assertDef(vhost));
 
         filenames
-            .filter((filename) => filename.endsWith('.ts'))
-            .forEach((filename) => {
+            .filter(filename => filename.endsWith('.ts'))
+            .forEach(filename => {
                 prettierEqTo(
                     vhost.readFile(filename),
                     upgradeFromCode(data[filename], target)
@@ -42,7 +42,7 @@ describe('Work with TypeScript Project', () => {
 
     it('should work with file', () => {
         const filename = last(
-            filenames.filter((filename) => filename.endsWith('.ts'))
+            filenames.filter(filename => filename.endsWith('.ts'))
         );
         const result = upgradeFromFile(filename, target, () =>
             assertDef(vhost)
