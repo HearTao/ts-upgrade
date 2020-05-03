@@ -29,7 +29,6 @@ import {
     SyntaxKind,
     textChanges,
     Token,
-    TypeChecker,
     TypeFormatFlags,
     isImportDeclaration,
     isNamespaceImport,
