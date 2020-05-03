@@ -12,6 +12,7 @@ import {
     createToken,
     createTypeReferenceNode,
     ElementAccessExpression,
+    ExportDeclaration,
     Expression,
     forEachChild,
     isBinaryExpression,
@@ -28,22 +29,38 @@ import {
     SyntaxKind,
     textChanges,
     Token,
-    TypeChecker,
-    TypeFormatFlags
+    TypeFormatFlags,
+    isImportDeclaration,
+    isNamespaceImport,
+    isExportDeclaration,
+    ImportDeclaration,
+    isNamedExports,
+    NamedExports,
+    ExportSpecifier,
+    createExportDeclaration,
+    createNamespaceExport,
+    createNodeArray,
+    createNamedExports,
+    createImportClause,
+    Identifier,
+    FindAllReferences,
+    Program,
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
-import { cast, skipParens, lastOrUndefined, assertDef } from './utils';
+import { cast, skipParens, lastOrUndefined, assertDef, isDef } from './utils';
 
 export const visit = (
     sourceFile: SourceFile,
-    checker: TypeChecker,
+    program: Program,
     changeTracker: textChanges.ChangeTracker,
     target: TypeScriptVersion
 ): void => {
+    const checker = program.getTypeChecker();
+    
     visitor(sourceFile);
-
+    
     function visitor(node: Node): Node | undefined {
         switch (node.kind) {
             case SyntaxKind.ConditionalExpression:
@@ -54,9 +71,95 @@ export const visit = (
                 return upgradeBinaryExpression(node as BinaryExpression);
             case SyntaxKind.AsExpression:
                 return upgradeAsExpression(node as AsExpression);
+            case SyntaxKind.ExportDeclaration:
+                return upgradeExportAsNsExpression(node as ExportDeclaration);
             default:
                 return forEachChild(node, visitor);
         }
+    }
+
+
+    function upgradeExportAsNsExpression(expr: ExportDeclaration): Node | undefined {
+        if (target < TypeScriptVersion.V3_8) return forEachChild(expr, visitor);
+        const namedExports = getNamedExports(expr);
+        if (namedExports === undefined) return forEachChild(expr, visitor);
+
+        const exportSpecifiers = namedExports.elements;
+        const newExports: ExportSpecifier[] = [];
+        for (const specifier of exportSpecifiers) {
+            const propertyName = specifier.propertyName ?? specifier.name;
+            const importDec = findImportDeclaration(propertyName);
+            if (importDec === undefined) {
+                newExports.push(specifier);
+                continue;
+            }
+
+            const expression = createExportDeclaration(
+                undefined,
+                undefined,
+                createNamespaceExport(specifier.name),
+                importDec.moduleSpecifier
+            );
+            changeTracker.insertNodeBefore(sourceFile, expr, expression);
+            removeNamespaceFromImport(importDec);
+        }
+        replaceNamedExports(newExports, namedExports);
+        return forEachChild(expr, visitor);
+    }
+
+    function replaceNamedExports(newExports: ExportSpecifier[], oldExports: NamedExports): void {
+        if (newExports.length === 0) {
+            changeTracker.deleteNodeRange(sourceFile, oldExports.parent, oldExports.parent);
+            return;
+        }
+        const specifiers = createNodeArray(newExports);
+        const newNamedExports = createNamedExports(specifiers);
+        changeTracker.replaceNode(sourceFile, oldExports, newNamedExports);
+    }
+
+    function removeNamespaceFromImport(importDec: ImportDeclaration): void {
+        const importClause = importDec.importClause!;
+        if (importClause.name === undefined) {
+            changeTracker.deleteNodeRange(sourceFile, importDec, importDec);
+            return;
+        }
+        changeTracker.replaceNode(sourceFile, importClause, createImportClause(
+            importClause.name!,
+            undefined,
+            importClause.isTypeOnly
+        ));
+    }
+
+    function getNamedExports(node: Node): NamedExports | undefined {
+        if (!isExportDeclaration(node)) return undefined;
+        const named = node.exportClause;
+        if (named === undefined || !isNamedExports(named)) return undefined;
+        return named;
+    }
+
+    function findImportDeclaration(identifier: Identifier) {
+        const entries = FindAllReferences.getReferenceEntriesForNode(
+            -1,
+            identifier,
+            program,
+            [sourceFile],
+            { throwIfCancellationRequested: () => { }, isCancellationRequested: () => false }
+        );
+        if (entries === undefined || entries.length === 0) return undefined;
+        let importDec: undefined | ImportDeclaration = undefined;
+        for (const entry of entries) {
+            if (entry.kind !== FindAllReferences.EntryKind.Node) return undefined;
+            const { context, node } = entry;
+            if (context === undefined || FindAllReferences.isContextWithStartAndEndNode(context)) return undefined;
+            if (isImportDeclaration(context)) {
+                if (importDec !== undefined) return undefined;
+                if (!node.parent || !isNamespaceImport(node.parent)) return undefined;
+                importDec = context;
+                continue;
+            }
+            if (!isExportDeclaration(context)) return undefined;
+        }
+        return importDec;
     }
 
     function upgradeAsExpression(expr: AsExpression): Node | undefined {
