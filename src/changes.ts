@@ -4,8 +4,6 @@ import {
     Node,
     startEndOverlapsWithStartEnd,
     BaseChange,
-    NodeArray,
-    TypeParameterDeclaration
 } from 'typescript';
 import { lastOrUndefined } from './utils';
 
