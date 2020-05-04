@@ -61,8 +61,7 @@ export class ParseConfigHostImpl implements ParseConfigHost {
                 excludes,
                 includes,
                 depth
-               
-            ) ||  /* istanbul ignore next */ []
+            ) || /* istanbul ignore next */ []
         );
     }
 

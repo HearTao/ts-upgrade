@@ -3,7 +3,7 @@ import {
     SourceFile,
     Node,
     startEndOverlapsWithStartEnd,
-    BaseChange,
+    BaseChange
 } from 'typescript';
 import { lastOrUndefined } from './utils';
 

@@ -148,7 +148,9 @@ export const visit = (
         );
     }
 
-    function getNamedExports(expr: ExportDeclaration): NamedExports | undefined {
+    function getNamedExports(
+        expr: ExportDeclaration
+    ): NamedExports | undefined {
         const clause = expr.exportClause;
         return clause && isNamedExports(clause) ? clause : undefined;
     }
@@ -160,8 +162,8 @@ export const visit = (
             program,
             [sourceFile],
             {
-                throwIfCancellationRequested: () => { },
-                isCancellationRequested:/* istanbul ignore next */ () => false
+                throwIfCancellationRequested: () => {},
+                isCancellationRequested: /* istanbul ignore next */ () => false
             }
         );
         if (entries === undefined || entries.length === 0) return undefined;

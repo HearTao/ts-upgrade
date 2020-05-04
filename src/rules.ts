@@ -28,9 +28,9 @@ export function typeScriptVersionToFeatures(
 
     const result = new Set<FeatureRules>();
     versions
-        .filter((v) => v <= version)
-        .forEach((v) => {
-            featureVersionMap.get(v)?.forEach((rule) => {
+        .filter(v => v <= version)
+        .forEach(v => {
+            featureVersionMap.get(v)?.forEach(rule => {
                 addFeatureIfEnabled(result, rule, options);
             });
         });
