@@ -49,3 +49,11 @@ export function last<T>(list: readonly T[] | undefined): T {
     }
     return result;
 }
+
+export function isNumber(v: unknown): v is number {
+    return typeof v === 'number';
+}
+
+export function numericalEnumValues<T>(e: T): number[] {
+    return Object.values(e).filter(isNumber);
+}

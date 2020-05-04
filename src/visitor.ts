@@ -49,14 +49,18 @@ import {
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
 import { isValidConstAssertionArgument } from './internal';
-import { cast, skipParens, lastOrUndefined, assertDef, isDef } from './utils';
+import { cast, skipParens, lastOrUndefined, assertDef } from './utils';
+import { typeScriptVersionToFeatures } from './rules';
+import { FeatureRules, Options } from './types';
 
 export const visit = (
     sourceFile: SourceFile,
     program: Program,
     changeTracker: textChanges.ChangeTracker,
-    target: TypeScriptVersion
+    target: TypeScriptVersion,
+    options: Options
 ): void => {
+    const featureSet = typeScriptVersionToFeatures(target, options);
     const checker = program.getTypeChecker();
 
     visitor(sourceFile);
@@ -81,30 +85,32 @@ export const visit = (
     function upgradeExportAsNsExpression(
         expr: ExportDeclaration
     ): Node | undefined {
-        if (target < TypeScriptVersion.V3_8) return forEachChild(expr, visitor);
-        const namedExports = getNamedExports(expr);
-        if (namedExports === undefined) return forEachChild(expr, visitor);
+        if (featureSet.has(FeatureRules.ExportAsNamespace)) {
+            const namedExports = getNamedExports(expr);
+            if (namedExports === undefined) return forEachChild(expr, visitor);
 
-        const exportSpecifiers = namedExports.elements;
-        const newExports: ExportSpecifier[] = [];
-        for (const specifier of exportSpecifiers) {
-            const propertyName = specifier.propertyName ?? specifier.name;
-            const importDec = findImportDeclaration(propertyName);
-            if (importDec === undefined) {
-                newExports.push(specifier);
-                continue;
+            const exportSpecifiers = namedExports.elements;
+            const newExports: ExportSpecifier[] = [];
+            for (const specifier of exportSpecifiers) {
+                const propertyName = specifier.propertyName ?? specifier.name;
+                const importDec = findImportDeclaration(propertyName);
+                if (importDec === undefined) {
+                    newExports.push(specifier);
+                    continue;
+                }
+
+                const expression = createExportDeclaration(
+                    undefined,
+                    undefined,
+                    createNamespaceExport(specifier.name),
+                    importDec.moduleSpecifier
+                );
+                changeTracker.insertNodeBefore(sourceFile, expr, expression);
+                removeNamespaceFromImport(importDec);
             }
-
-            const expression = createExportDeclaration(
-                undefined,
-                undefined,
-                createNamespaceExport(specifier.name),
-                importDec.moduleSpecifier
-            );
-            changeTracker.insertNodeBefore(sourceFile, expr, expression);
-            removeNamespaceFromImport(importDec);
+            replaceNamedExports(newExports, namedExports);
         }
-        replaceNamedExports(newExports, namedExports);
+
         return forEachChild(expr, visitor);
     }
 
@@ -142,11 +148,9 @@ export const visit = (
         );
     }
 
-    function getNamedExports(node: Node): NamedExports | undefined {
-        if (!isExportDeclaration(node)) return undefined;
-        const named = node.exportClause;
-        if (named === undefined || !isNamedExports(named)) return undefined;
-        return named;
+    function getNamedExports(expr: ExportDeclaration): NamedExports | undefined {
+        const clause = expr.exportClause;
+        return clause && isNamedExports(clause) ? clause : undefined;
     }
 
     function findImportDeclaration(identifier: Identifier) {
@@ -156,13 +160,14 @@ export const visit = (
             program,
             [sourceFile],
             {
-                throwIfCancellationRequested: () => {},
-                isCancellationRequested: () => false
+                throwIfCancellationRequested: () => { },
+                isCancellationRequested:/* istanbul ignore next */ () => false
             }
         );
         if (entries === undefined || entries.length === 0) return undefined;
         let importDec: undefined | ImportDeclaration = undefined;
         for (const entry of entries) {
+            /* istanbul ignore if */
             if (entry.kind !== FindAllReferences.EntryKind.Node)
                 return undefined;
             const { context, node } = entry;
@@ -172,7 +177,6 @@ export const visit = (
             )
                 return undefined;
             if (isImportDeclaration(context)) {
-                if (importDec !== undefined) return undefined;
                 if (!node.parent || !isNamespaceImport(node.parent))
                     return undefined;
                 importDec = context;
@@ -184,7 +188,7 @@ export const visit = (
     }
 
     function upgradeAsExpression(expr: AsExpression): Node | undefined {
-        if (target >= TypeScriptVersion.v3_4) {
+        if (featureSet.has(FeatureRules.ConstAssertion)) {
             const expression = skipParens(expr.expression);
             if (
                 !isConstTypeReference(expr.type) &&
@@ -245,7 +249,7 @@ export const visit = (
     function upgradeConditionalExpression(
         expr: ConditionalExpression
     ): Node | undefined {
-        if (target >= TypeScriptVersion.v3_7) {
+        if (featureSet.has(FeatureRules.NullishCoalesce)) {
             // a === null || a === undefined ? b : a
             // to
             // a ?? b
@@ -276,13 +280,15 @@ export const visit = (
         // a && a.b && a.b["c"] && a.b["c"]()
         // to
         // a?.b?.["c"]?.()
-        const optionalChains = getOptionalChains(expr);
-        if (optionalChains) {
-            createOptionalChains(
-                expr,
-                optionalChains.first,
-                optionalChains.chains
-            );
+        if (featureSet.has(FeatureRules.OptionalChains)) {
+            const optionalChains = getOptionalChains(expr);
+            if (optionalChains) {
+                createOptionalChains(
+                    expr,
+                    optionalChains.first,
+                    optionalChains.chains
+                );
+            }
         }
         return forEachChild(expr, visitor);
     }
@@ -296,7 +302,9 @@ export const visit = (
         let lastChain = firstChain;
         for (let i = 0; i < chains.length; ++i) {
             const chain = chains[i];
-            prefix = assertDef(replacePrefix(lastChain, chain, prefix));
+            const nextPrefix = replacePrefix(lastChain, chain, prefix);
+            if (nextPrefix === undefined) return;
+            prefix = nextPrefix;
             lastChain = chain;
         }
         changeTracker.replaceNode(sourceFile, expr, prefix);

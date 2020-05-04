@@ -99,4 +99,19 @@ describe('nullish upgrade', () => {
         const after = `a(foo ?? 1) ?? (b ?? 2)`;
         prettierEqTo(upgrade(code, version), after);
     });
+
+    it('should not work with binary and', () => {
+        const code = `a & 1 ? 1 : 0`;
+        prettierEqTo(upgrade(code, version), code);
+    });
+
+    it('should not work with wrong branch', () => {
+        const code = `a == null ? a : 1`;
+        prettierEqTo(upgrade(code, version), code);
+    });
+
+    it('should not work with wrong and condition', () => {
+        const code = `a !== null && b !== undefined ? a : 1`;
+        prettierEqTo(upgrade(code, version), code);
+    });
 });
