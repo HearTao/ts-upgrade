@@ -23,9 +23,7 @@ const umdConfig = {
             }
         ]
     },
-    externals: {
-        typescript: 'ts'
-    }
+    externals: ['typescript']
 };
 
 const webConfig = merge(umdConfig, {
