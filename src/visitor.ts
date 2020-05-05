@@ -44,7 +44,9 @@ import {
     createImportClause,
     Identifier,
     FindAllReferences,
-    Program
+    Program,
+    suppressLeadingAndTrailingTrivia,
+    copyComments
 } from 'typescript';
 import { TypeScriptVersion } from '.';
 import { deSynthesized, setParentContext } from './hack';
@@ -241,6 +243,7 @@ export const visit = (
                         expression,
                         createTypeReferenceNode('const', undefined)
                     );
+                    suppressLeadingAndTrailingTrivia(newNode);
                     changeTracker.replaceNode(sourceFile, expr, newNode);
                 }
             }
@@ -272,6 +275,7 @@ export const visit = (
                     nullableConditionTarget,
                     fallbackBranch
                 );
+                suppressLeadingAndTrailingTrivia(newNode);
                 changeTracker.replaceNode(sourceFile, expr, newNode);
             }
         }
@@ -309,6 +313,7 @@ export const visit = (
             prefix = nextPrefix;
             lastChain = chain;
         }
+        suppressLeadingAndTrailingTrivia(prefix);
         changeTracker.replaceNode(sourceFile, expr, prefix);
     }
 

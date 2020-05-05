@@ -236,4 +236,8 @@ declare module 'typescript' {
     export enum NodeFlags {
         Ambient = 1 << 23
     }
+
+    export function suppressLeadingAndTrailingTrivia(node: Node): void;
+
+    export function copyComments(sourceNode: Node, targetNode: Node): void;
 }
