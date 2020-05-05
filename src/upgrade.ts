@@ -39,7 +39,7 @@ function upgradeWorker(
         const program = (lastProgram = createProgramCallback(lastProgram));
 
         program.getSourceFiles().forEach(sourceFile => {
-            let text = sourceFile.getText();
+            let text = sourceFile.getFullText();
             const changes = textChanges.ChangeTracker.with(
                 {
                     formatContext,

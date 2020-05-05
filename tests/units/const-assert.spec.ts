@@ -80,4 +80,11 @@ describe('const assert', () => {
         const code = `a as true`;
         prettierEqTo(upgrade(code, version), code);
     });
+
+    it('should work with comments', () => {
+        const code = `// comments here\n 1 as 1`;
+        const after = `// comments here\n 1 as const`;
+        console.log(upgrade(code, version));
+        prettierEqTo(upgrade(code, version), after);
+    });
 });
