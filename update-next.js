@@ -7,6 +7,8 @@ const commit = childProcess
     .slice(0, 8);
 const package = JSON.parse(fs.readFileSync('./package.json').toString());
 
-package.version = `${package.version}-${commit}`;
+const now = new Date();
+const dateTime = `${now.getFullYear()}-${now.getMonth() + 1}-${now.getDate()}`;
+package.version = `${package.version}-${dateTime}-${commit}`;
 
 fs.writeFileSync('./package.json', JSON.stringify(package, undefined, 2));
